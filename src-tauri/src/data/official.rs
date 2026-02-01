@@ -30,12 +30,13 @@ pub struct Official {
 impl Official {
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let official = Self::read(cursor)?;
+        data.order_officials.push(official.id);
         data.officials.insert(official.id, official);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());

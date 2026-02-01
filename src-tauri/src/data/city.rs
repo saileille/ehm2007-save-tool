@@ -47,12 +47,13 @@ impl City {
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let city = Self::read(cursor)?;
+        data.order_cities.push(city.id);
         data.cities.insert(city.id, city);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.latitude.to_le_bytes());

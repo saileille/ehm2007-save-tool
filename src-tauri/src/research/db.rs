@@ -16,8 +16,7 @@ pub fn load_files(path_name: &str) -> Data {
         let mut file = match File::open(&path_buf) {
             Ok(f) => f,
             Err(e) => {
-                println!("{}", path_buf.to_str().unwrap());
-                panic!("{e}");
+                panic!("{} - {}", path_buf.to_str().unwrap(), e);
             }
         };
 

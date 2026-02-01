@@ -35,8 +35,7 @@ fn load_player_data(chart: &AttributeChart, folder: &mut PathBuf) -> (AttributeD
     let file = match File::open(folder_name) {
         Ok(f) => f,
         Err(e) => {
-            println!("{folder_name}");
-            panic!("{e}");
+            panic!("{folder_name} - {e}");
         }
     };
     let save = load_save(file);
@@ -64,8 +63,7 @@ fn load_database(folder: &mut PathBuf) -> Data {
         let mut file = match File::open(folder.to_str().unwrap()) {
             Ok(f) => f,
             Err(e) => {
-                println!("{}", folder.to_str().unwrap());
-                panic!("{e}");
+                panic!("{} - {}", folder.to_str().unwrap(), e);
             }
         };
 

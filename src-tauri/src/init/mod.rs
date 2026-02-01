@@ -1,11 +1,11 @@
 /* Load stuff. */
 pub mod debug;
 
-use std::{collections::HashMap, fs::File, io::{Cursor, Read as _}, path::Path};
+use std::{collections::HashMap, fs::{File, OpenOptions}, io::{Cursor, Read as _, Write}, path::Path};
 
 use binread::{BinRead, Error};
 
-use crate::{data::{Data, arena::Arena, city::City, club::Club, colour::Colour, competition::Competition, competition_history::CompetitionHistory, continent::Continent, currency::Currency, draft::Draft, injury::Injury, name::Name, nation::Nation, non_player::NonPlayer, official::Official, player::Player, retired_number::RetiredNumber, staff::Staff, staff_award::StaffAward, staff_preferences::StaffPreferences, stage_name::StageName, state_province::StateProvince}, init::debug::check_players};
+use crate::{data::{Data, arena::Arena, city::City, club::Club, colour::Colour, competition::Competition, competition_history::CompetitionHistory, continent::Continent, currency::Currency, draft::Draft, injury::Injury, name::Name, nation::Nation, non_player::NonPlayer, official::Official, player::Player, retired_number::RetiredNumber, staff::Staff, staff_award::StaffAward, staff_preferences::StaffPreferences, stage_name::StageName, state_province::StateProvince}, init::debug::check_players, to_bytes::chars_to_bytes};
 
 type ParseFunc = fn (&mut Data, &mut Cursor<Vec<u8>>) -> Result<(), Error>;
 
@@ -17,32 +17,77 @@ pub struct Header {
     files: i32,
 }
 
-#[derive(BinRead, Clone)]
+impl Header {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+
+        bytes.extend_from_slice(&self.compressed.to_le_bytes());
+        bytes.extend_from_slice(&self.header.to_le_bytes());
+        bytes.extend_from_slice(&self.files.to_le_bytes());
+
+        return bytes;
+    }
+}
+
+#[derive(Debug)]
+#[derive(BinRead, Clone, Default)]
 #[br(little)]
 pub struct FileIndex {
-    start_position: u32,
-    size: u32,
+    pub start_position: u32,
+    pub size: u32,
 
     #[br(count = 260)]
-    b_name: Vec<char>,
+    pub b_name: Vec<char>,
 }
 
 impl FileIndex {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+
+        bytes.extend_from_slice(&self.start_position.to_le_bytes());
+        bytes.extend_from_slice(&self.size.to_le_bytes());
+        bytes.append(&mut chars_to_bytes(&self.b_name));
+
+        return bytes;
+    }
+
     // Get the string of the name.
-    fn name(&self) -> String {
+    pub fn name(&self) -> String {
         return bytes_to_string(&self.b_name);
     }
 
     // Get the binary and a cursor for it.
-    fn bin(&self, global_cursor: &mut Cursor<Vec<u8>>) -> Cursor<Vec<u8>> {
+    fn bin(&self, global_cursor: &mut Cursor<Vec<u8>>) -> Result<Cursor<Vec<u8>>, Error> {
         // Put the cursor where we need it.
         global_cursor.set_position(self.start_position as u64);
 
         // Fill the buffer with garbage.
         let mut buffer: Vec<u8> = vec![0; self.size as usize];
-        global_cursor.read_exact(&mut buffer).unwrap();
+        global_cursor.read_exact(&mut buffer)?;
 
-        return Cursor::new(buffer);
+        return Ok(Cursor::new(buffer));
+    }
+
+    fn to_string(&self, index: usize) -> String {
+        let name: String = self.b_name.iter().collect();
+        format!("{};{};{};{}", index, self.start_position, self.size, name)
+    }
+
+    fn debug_csv(file_indexes: &[Self]) {
+        let mut csv = Vec::from(["Index;Start Position;Size;Name".to_string()]);
+        for (i, file_index) in file_indexes.iter().enumerate() {
+            csv.push(file_index.to_string(i));
+        }
+
+        let csv = csv.join("\n");
+
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(r"C:\Users\Aleksi\Documents\Sports Interactive\EHM 2007\games\file_indexes.csv")
+            .unwrap();
+
+        writeln!(file, "{csv}").unwrap();
     }
 }
 
@@ -60,24 +105,31 @@ pub fn bytes_to_string(bytes: &[char]) -> String {
     return chars.into_iter().collect();
 }
 
+pub fn load_debug_bin(path_name: &str) -> Data {
+    let save = load_bin(path_name);
+
+    let mut debug_save = save.clone();
+    check_players(&mut debug_save);
+
+    let debug_bin = debug_save.save_file();
+
+    let debug_path = "C:/Users/Aleksi/Documents/Sports Interactive/EHM 2007/games/test_debug.sav";
+    let mut file = File::create(debug_path).unwrap();
+    file.write_all(&debug_bin).unwrap();
+
+    return load_bin(debug_path);
+}
+
 // Load the binary.
 pub fn load_bin(path_name: &str) -> Data {
     let path = Path::new(path_name);
 
     let file = match File::open(path) {
         Ok(f) => f,
-        Err(e) => {
-            println!("{path_name}");
-            panic!("{e}");
-        }
+        Err(e) => panic!("{e} - path: {path_name}")
     };
 
-    let save = load_save(file);
-    let mut debug_save = save.clone();
-    // check_players(&mut debug_save);
-
-
-    return save;
+    return load_save(file);
 }
 
 pub fn load_save(mut file: File) -> Data {
@@ -92,11 +144,11 @@ pub fn load_save(mut file: File) -> Data {
 }
 
 // Read file indexes.
-pub fn read_file_indexes(cursor: &mut Cursor<Vec<u8>>, header: &Header) -> HashMap<String, FileIndex> {
-    let mut file_indexes = HashMap::new();
+pub fn read_file_indexes(cursor: &mut Cursor<Vec<u8>>, header: &Header) -> Vec<FileIndex> {
+    let mut file_indexes = Vec::new();
     for _ in 0..header.files {
         let index = FileIndex::read(cursor).unwrap();
-        file_indexes.insert(index.name(), index);
+        file_indexes.push(index);
     }
 
     return file_indexes;
@@ -139,17 +191,22 @@ pub fn parse_files(global_cursor: &mut Cursor<Vec<u8>>, data: &mut Data) {
     let parser_guide = get_parser_guide();
     let file_indexes = data.file_indexes.clone();
 
-    for (name, file) in file_indexes {
-        let mut cursor = file.bin(global_cursor);
+    // FileIndex::debug_csv(&file_indexes);
+
+    for index in file_indexes {
+        let name = index.name();
+        let mut cursor = match index.bin(global_cursor) {
+            Ok(c) => c,
+            Err(e) => panic!("{e} - file name: {name}")
+        };
+
         match parser_guide.get(name.as_str()) {
             Some(parser) => {
-                parse_file(&mut cursor, parser, data, file.size as u64, name.as_str());
-                println!("[x] {name}");
+                parse_file(&mut cursor, parser, data, index.size as u64, name.as_str());
             },
             None => {
                 // Add the save file part into the binaries as-is.
                 data.binaries.insert(name.clone(), cursor.into_inner());
-                println!("{name}");
             }
         };
     }

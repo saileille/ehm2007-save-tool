@@ -50,12 +50,13 @@ impl Injury {
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let injury = Self::read(cursor)?;
+        data.order_injuries.push(injury.id);
         data.injuries.insert(injury.id, injury);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.minimum_days_out.to_le_bytes());

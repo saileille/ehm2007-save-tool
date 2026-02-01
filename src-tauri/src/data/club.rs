@@ -95,6 +95,7 @@ impl Club {
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let club = Self::read(cursor)?;
+        data.order_clubs.push(club.id);
         data.clubs.insert(club.id, club);
 
         return Ok(())
@@ -102,12 +103,13 @@ impl Club {
 
     pub fn parse_nat(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let club = Self::read(cursor)?;
+        data.order_nat_clubs.push(club.id);
         data.nat_clubs.insert(club.id, club);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());

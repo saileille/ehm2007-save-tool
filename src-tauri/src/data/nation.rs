@@ -79,12 +79,13 @@ impl Nation {
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let nation = Self::read(cursor)?;
+        data.order_nations.push(nation.id);
         data.nations.insert(nation.id, nation);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.iihf_ranking_score.to_le_bytes());

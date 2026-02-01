@@ -33,12 +33,13 @@ impl StaffAward {
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let award = Self::read(cursor)?;
+        data.order_staff_awards.push(award.id);
         data.staff_awards.insert(award.id, award);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());

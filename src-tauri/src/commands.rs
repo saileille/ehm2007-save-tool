@@ -1,6 +1,6 @@
 use tauri::Manager as _;
 
-use crate::data::Data;
+use crate::{attr_chart::attr_chart, data::Data};
 
 #[tauri::command]
 // Get the players in the save.

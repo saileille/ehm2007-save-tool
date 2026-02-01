@@ -20,12 +20,13 @@ pub struct StateProvince {
 impl StateProvince {
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let province = Self::read(cursor)?;
+        data.order_states_provinces.push(province.id);
         data.states_provinces.insert(province.id, province);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());

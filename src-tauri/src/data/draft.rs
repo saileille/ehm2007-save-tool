@@ -26,12 +26,13 @@ impl Draft {
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let draft = Self::read(cursor)?;
+        data.order_drafts.push(draft.id);
         data.drafts.insert(draft.id, draft);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());

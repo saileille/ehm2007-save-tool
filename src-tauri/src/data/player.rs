@@ -77,12 +77,13 @@ pub struct Player {
 impl Player {
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let player = Self::read(cursor)?;
+        data.order_players.push(player.id);
         data.players.insert(player.id, player);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());
@@ -158,13 +159,13 @@ impl Player {
         return self.goaltender == 20;
     }
 
-    fn convert_attribute(&self, chart: &AttributeChart, attr_name: &str) -> Option<i8> {
+    pub fn convert_attribute(&self, chart: &AttributeChart, attr_name: &str) -> Option<i8> {
         let attribute = match attr_name {
             "Anticipation" => self.anticipation_raw,
             "Balance" => self.balance_raw,
             "Decisions" => self.decisions_raw,
             "Off The Puck" => self.movement_raw,
-            "One-on-Ones" => self.one_on_ones_raw,
+            "One On Ones" => self.one_on_ones_raw,
             "Passing" => self.passing_raw,
             "Positioning" => self.positioning_raw,
             "Reflexes" => self.reflexes_raw,

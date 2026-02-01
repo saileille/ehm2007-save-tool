@@ -21,6 +21,7 @@ impl Name {
 
     pub fn parse_forename(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let name = Self::read(cursor)?;
+        data.order_forenames.push(name.id);
         data.forenames.insert(name.id, name);
 
         return Ok(())
@@ -28,12 +29,13 @@ impl Name {
 
     pub fn parse_surname(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let name = Self::read(cursor)?;
+        data.order_surnames.push(name.id);
         data.surnames.insert(name.id, name);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.append(&mut chars_to_bytes(&self.b_name));

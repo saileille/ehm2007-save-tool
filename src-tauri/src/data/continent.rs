@@ -30,12 +30,13 @@ impl Continent {
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let continent = Self::read(cursor)?;
+        data.order_continents.push(continent.id);
         data.continents.insert(continent.id, continent);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.regional_strength.to_le_bytes());

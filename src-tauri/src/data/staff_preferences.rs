@@ -25,12 +25,13 @@ pub struct StaffPreferences {
 impl StaffPreferences {
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let preferences = Self::read(cursor)?;
+        data.order_staff_preferences.push(preferences.id);
         data.staff_preferences.insert(preferences.id, preferences);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());

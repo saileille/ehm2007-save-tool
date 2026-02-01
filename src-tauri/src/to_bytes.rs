@@ -32,14 +32,3 @@ pub fn chars_to_bytes(chars: &[char]) -> Vec<u8> {
         .map(|&char| char as u8)
         .collect()
 }
-
-// Example usage:
-fn main() {
-    let arr1 = [1u32, 2u32, 3u32];
-    let bytes1 = slice_to_bytes(&arr1);
-    println!("{:?}", bytes1);
-
-    let arr2 = [100i16, 200i16];
-    let bytes2 = slice_to_bytes(&arr2);
-    println!("{:?}", bytes2);
-}

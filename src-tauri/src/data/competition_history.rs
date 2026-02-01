@@ -20,6 +20,7 @@ pub struct CompetitionHistory {
 impl CompetitionHistory {
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let history = Self::read(cursor)?;
+        data.order_comp_history.push(history.id);
         data.comp_history.insert(history.id, history);
 
         return Ok(())
@@ -27,12 +28,13 @@ impl CompetitionHistory {
 
     pub fn parse_nat(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let history = Self::read(cursor)?;
+        data.order_nat_comp_history.push(history.id);
         data.nat_comp_history.insert(history.id, history);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());

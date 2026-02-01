@@ -8,7 +8,7 @@ mod to_bytes;
 
 use tauri::Manager as _;
 
-use crate::{init::load_bin, research::load_databases};
+use crate::{init::{load_bin, load_debug_bin}, research::load_databases};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -17,9 +17,10 @@ pub fn run() {
         .setup(|app| {
             // Research stuff here...
             // load_databases("D:/Programs/NHL Eastside Hockey Manager 2007/data/database");
+            // let data = load_debug_bin("C:/Users/Aleksi/Documents/Sports Interactive/EHM 2007/games/test.sav");
 
             let handle = app.handle();
-            let data = load_bin("C:/Users/Aleksi/Documents/Sports Interactive/EHM 2007/games/suomi.sav");
+            let data = load_bin("C:/Users/Aleksi/Documents/Sports Interactive/EHM 2007/games/test.sav");
             handle.manage(data);
 
             #[cfg(debug_assertions)] {

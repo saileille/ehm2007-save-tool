@@ -29,12 +29,13 @@ impl StageName {
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let stage_name = Self::read(cursor)?;
+        data.order_stage_names.push(stage_name.id);
         data.stage_names.insert(stage_name.id, stage_name);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());

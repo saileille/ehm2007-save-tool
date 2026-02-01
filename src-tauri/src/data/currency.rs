@@ -40,12 +40,13 @@ impl Currency {
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let currency = Self::read(cursor)?;
+        data.order_currencies.push(currency.id);
         data.currencies.insert(currency.id, currency);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());

@@ -4,7 +4,7 @@ use binread::{BinRead, Error};
 use regex::Regex;
 use serde_json::json;
 
-use crate::{data::{Data, SIDate, city::City, club::Club, nation::Nation, player::Player}, research::db};
+use crate::{attr_chart::AttributeChart, data::{Data, SIDate, city::City, club::Club, nation::Nation, player::Player}, research::db};
 
 #[derive(BinRead, Clone)]
 #[br(little)]
@@ -18,7 +18,7 @@ pub struct Staff {
     preferences_id: i32,
     non_player_data_id: i32,
     nation_contracted_id: i32,
-    club_contracted_id: i32,
+    pub club_contracted_id: i32,
     club_playing_id: i32,
     player_rights_index: i32,
     birth_town_id: i32,
@@ -57,12 +57,13 @@ pub struct Staff {
 impl Staff {
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let staff = Self::read(cursor)?;
+        data.order_staff.push(staff.id);
         data.staff.insert(staff.id, staff);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());
@@ -236,11 +237,10 @@ impl Staff {
         return data.players.get(&self.player_data_id).cloned();
     }
 
-    // Check if the person's name only has letters in the English alphabet.
-    pub fn has_standard_name(&self, data: &Data) -> bool {
-        // Only use people whose names have basic characters.
-        let re = Regex::new(r"[\w ]+").unwrap();
-        return re.is_match(format!("{} {}", self.forename(data), self.surname(data)).as_str());
+    // Check if the person's name has no special characters.
+    pub fn has_no_special_characters(&self, data: &Data) -> bool {
+        let re = Regex::new(r"^[\w ]+$").unwrap();
+        re.is_match(format!("{} {}", self.forename(data), self.surname(data)).as_str())
     }
 
     // Create an array of player data.
@@ -273,28 +273,28 @@ impl Staff {
             p.acceleration,
             p.aggression,
             p.agility,
-            p.anticipation_raw,
-            p.balance_raw,
+            p.convert_attribute(&data.attr_chart, "Anticipation"),
+            p.convert_attribute(&data.attr_chart, "Balance"),
             p.bravery,
             p.consistency,
-            p.decisions_raw,
+            p.convert_attribute(&data.attr_chart, "Decisions"),
             p.dirtiness,
             p.flair,
             p.important_matches,
             p.injury_proneness,
             p.leadership,
-            p.movement_raw,
+            p.convert_attribute(&data.attr_chart, "Off The Puck"),
             p.natural_fitness,
-            p.one_on_ones_raw,
+            p.convert_attribute(&data.attr_chart, "One On Ones"),
             p.pace,
-            p.passing_raw,
-            p.positioning_raw,
-            p.reflexes_raw,
+            p.convert_attribute(&data.attr_chart, "Passing"),
+            p.convert_attribute(&data.attr_chart, "Positioning"),
+            p.convert_attribute(&data.attr_chart, "Reflexes"),
             p.stamina,
             p.strength,
             p.teamwork,
             p.versatility,
-            p.vision_raw,
+            p.convert_attribute(&data.attr_chart, "Creativity"),
             p.work_rate,
             p.goaltender,
             p.left_defence,
@@ -303,23 +303,23 @@ impl Staff {
             p.center,
             p.right_wing,
             p.agitation,
-            p.blocker_raw,
-            p.checking_raw,
+            p.convert_attribute(&data.attr_chart, "Blocker"),
+            p.convert_attribute(&data.attr_chart, "Checking"),
             p.defensive_role,
-            p.deflections_raw,
-            p.deking_raw,
-            p.faceoffs_raw,
-            p.fighting_raw,
-            p.glove_raw,
-            p.hitting_raw,
+            p.convert_attribute(&data.attr_chart, "Deflections"),
+            p.convert_attribute(&data.attr_chart, "Deking"),
+            p.convert_attribute(&data.attr_chart, "Faceoffs"),
+            p.convert_attribute(&data.attr_chart, "Fighting"),
+            p.convert_attribute(&data.attr_chart, "Glove"),
+            p.convert_attribute(&data.attr_chart, "Hitting"),
             p.offensive_role,
             p.pass_tendency,
-            p.pokecheck_raw,
-            p.rebounds_raw,
-            p.recovery_raw,
-            p.slapshot_raw,
-            p.stickhandling_raw,
-            p.wristshot_raw,
+            p.convert_attribute(&data.attr_chart, "Pokecheck"),
+            p.convert_attribute(&data.attr_chart, "Rebound Control"),
+            p.convert_attribute(&data.attr_chart, "Recovery"),
+            p.convert_attribute(&data.attr_chart, "Slapshot"),
+            p.convert_attribute(&data.attr_chart, "Stickhandling"),
+            p.convert_attribute(&data.attr_chart, "Wristshot"),
 
         ]));
     }

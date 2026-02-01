@@ -54,6 +54,7 @@ impl Competition {
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let comp = Self::read(cursor)?;
+        data.order_competitions.push(comp.id);
         data.competitions.insert(comp.id, comp);
 
         return Ok(())
@@ -61,12 +62,13 @@ impl Competition {
 
     pub fn parse_nat(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
         let comp = Self::read(cursor)?;
+        data.order_nat_competitions.push(comp.id);
         data.nat_competitions.insert(comp.id, comp);
 
         return Ok(())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());

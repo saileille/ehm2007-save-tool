@@ -29,12 +29,13 @@ pub fn check_players(save: &mut Data) {
     ]);
 
     let mut ca: i16 = 1;
-    let mut attribute = i8::MIN;
+    let mut attribute: i16 = -60;
     for person in save.staff.values() {
         if ca > 200 { break; }
 
-        // Only include players with names consisting of normal characters.
-        if !person.has_standard_name(save) { continue; }
+        if !person.has_no_special_characters(&save) {
+            continue;
+        }
 
         let mut player_data = match person.player_data(save) {
             Some(p) => p,
@@ -45,16 +46,18 @@ pub fn check_players(save: &mut Data) {
         if player_data.is_goalie() { continue; }
 
         player_data.current_ability = ca;
+        player_data.potential_ability = ca;
 
         for attr_name in attributes.iter() {
-            let next_ca = give_attribute(&mut player_data, &mut attribute, *attr_name);
-            if next_ca {
+            if attribute > 122 {
                 ca += 1;
-                attribute = i8::MIN;
+                attribute = -60;
                 break;
             }
 
-            let debug_player = Player::new(person, player_data.current_ability, attribute - 1, *attr_name, save);
+            give_attribute(&mut player_data, &mut attribute, *attr_name);
+
+            let debug_player = Player::new(person, player_data.current_ability, (attribute - 1) as i8, *attr_name, save);
             log.push(debug_player.to_csv_row());
         }
 
@@ -64,16 +67,10 @@ pub fn check_players(save: &mut Data) {
 
     let mut file = File::create("C:/Users/Aleksi/Documents/Sports Interactive/EHM 2007/games/_debug_log2.csv").unwrap();
     file.write_all(log.join("\n").as_bytes()).unwrap();
-
-    // let string = debug_info.join("\n");
 }
 
-// Assign the attribute to the player. Return whether the loop should move to the next player.
-fn give_attribute(p: &mut data::player::Player, attribute: &mut i8, attr_name: &str) -> bool {
-    if *attribute == i8::MAX {
-        return true;
-    }
-
+// Assign the attribute to the player.
+fn give_attribute(p: &mut data::player::Player, attribute: &mut i16, attr_name: &str) {
     let attr = match attr_name {
         "Anticipation" => &mut p.anticipation_raw,
         "Balance" => &mut p.balance_raw,
@@ -93,10 +90,8 @@ fn give_attribute(p: &mut data::player::Player, attribute: &mut i8, attr_name: &
         _ => panic!("{attr_name} is not an attribute")
     };
 
-    *attr = *attribute;
+    *attr = *attribute as i8;
     *attribute += 1;
-
-    return false;
 }
 
 // Debug information about the player and one of his attributes.
