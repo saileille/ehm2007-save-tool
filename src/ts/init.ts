@@ -77,10 +77,12 @@ const HEADERS = [
 ];
 
 // Get the players from the database.
-export const fetchPlayers = async (nationId: number) => {
+export const fetchPlayers = async (nationId: number, nationalTeamCheck: boolean, countryChoiceCheck: boolean) => {
     invoke("fetch_players", {
         "headers": HEADERS,
         "nationId": nationId,
+        "nationalTeamCheck": nationalTeamCheck,
+        "countryChoiceCheck": countryChoiceCheck,
     }).then((players) => {
         PLAYERS = players as Player[];
         initialisePaging();
@@ -237,7 +239,7 @@ const createCell = (content: string | number): HTMLTableCellElement => {
 const loadSave = async () => {
     await invoke("load_save");
     await createPlayerView();
-    await fetchPlayers(-2);
+    await fetchPlayers(-2, false, false);
 };
 
 // Add the onclick event for the Load Save button here.

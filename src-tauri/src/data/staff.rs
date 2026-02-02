@@ -51,7 +51,7 @@ pub struct Staff {
     _playing_squad: i8,
     _classification: i8,
     _club_valuation: i8,
-    _declared_nation: i8,
+    declared_nation: i8,
     _stanley_cups_won: i8,
     _squad_selected_for: i8,
     _national_team_job_level: i8,
@@ -108,7 +108,7 @@ impl Staff {
         bytes.extend_from_slice(&self._playing_squad.to_le_bytes());
         bytes.extend_from_slice(&self._classification.to_le_bytes());
         bytes.extend_from_slice(&self._club_valuation.to_le_bytes());
-        bytes.extend_from_slice(&self._declared_nation.to_le_bytes());
+        bytes.extend_from_slice(&self.declared_nation.to_le_bytes());
         bytes.extend_from_slice(&self._stanley_cups_won.to_le_bytes());
         bytes.extend_from_slice(&self._squad_selected_for.to_le_bytes());
         bytes.extend_from_slice(&self._national_team_job_level.to_le_bytes());
@@ -243,8 +243,53 @@ impl Staff {
         format!("{}, {}", self.surname(data), self.forename(data))
     }
 
+    // Get the nation the player has declared for, if one exists.
+    fn declared_nation_id(&self) -> Option<i32> {
+        if self.declared_nation == 0 {
+            return None;
+        }
+
+        if self.declared_nation == 1 {
+            return Some(self.nation_id);
+        }
+
+        return Some(self.second_nation_id);
+    }
+
+    pub fn check_player_filters(&self, nation_id: i32, national_team_check: bool, country_choice_check: bool) -> bool {
+        return self.has_nationality(nation_id)
+        && self.check_national_team(nation_id, national_team_check)
+        && self.check_country_choice(nation_id, country_choice_check);
+    }
+
+    // Check if the player can play for the national team of the given nation.
+    fn check_national_team(&self, nation_id: i32, national_team_check: bool) -> bool {
+        // Cannot check this against non-nations.
+        if nation_id < 0 || !national_team_check {
+            return true;
+        }
+
+        let declared = self.declared_nation_id();
+        return declared.is_none() || declared.unwrap() == nation_id;
+    }
+
+    // Check if the player can choose to play for this country.
+    fn check_country_choice(&self, nation_id: i32, country_choice_check: bool) -> bool {
+        // Cannot check this against non-nations.
+        if nation_id < 0 || !country_choice_check {
+            return true;
+        }
+
+        // Cannot choose to play for this country if the player does not have a second country.
+        if self.second_nation_id < 0 {
+            return false;
+        }
+
+        return self.declared_nation_id().is_none();
+    }
+
     // Check if the person has the given nationality.
-    pub fn has_nationality(&self, nation_id: i32) -> bool {
+    fn has_nationality(&self, nation_id: i32) -> bool {
         // -2 is used as any nation.
         if nation_id == -2 {
             return true;
@@ -264,14 +309,7 @@ impl Staff {
     }
 
     // Create an array of player data.
-    pub fn create_player_view(&self, data: &Data, headers: &[String], counter: usize) -> Option<Vec<serde_json::Value>> {
-        let p_option = self.player_data(data);
-        if p_option.is_none() {
-            return None;
-        }
-
-        let p = p_option.unwrap();
-
+    pub fn create_player_view(&self, p: Player, data: &Data, headers: &[String], counter: usize) -> Option<Vec<serde_json::Value>> {
         let mut row = Vec::new();
 
         for header in headers {

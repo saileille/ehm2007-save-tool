@@ -5,17 +5,23 @@ use crate::{data::Data, init::load_bin};
 
 #[tauri::command]
 // Get the players in the save.
-pub fn fetch_players(handle: AppHandle, headers: Vec<String>, nation_id: i32) -> Vec<Vec<serde_json::Value>> {
+pub fn fetch_players(handle: AppHandle, headers: Vec<String>, nation_id: i32, national_team_check: bool, country_choice_check: bool) -> Vec<Vec<serde_json::Value>> {
     let data = handle.state::<Data>();
 
     let mut counter = 0;
     let players: Vec<Vec<serde_json::Value>> = data.staff.iter()
         .filter_map(|(_, person)| {
-            if !person.has_nationality(nation_id) {
+            let player = person.player_data(&data);
+            if player.is_none() {
+                return None;
+            }
+
+            let player = player.unwrap();
+            if !person.check_player_filters(nation_id, national_team_check, country_choice_check) {
                 return None
             }
 
-            let row = person.create_player_view(&data, &headers, counter);
+            let row = person.create_player_view(player, &data, &headers, counter);
             counter += 1;
             return row;
         })
