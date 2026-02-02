@@ -243,6 +243,20 @@ impl Staff {
         format!("{}, {}", self.surname(data), self.forename(data))
     }
 
+    // Check if the person has the given nationality.
+    pub fn has_nationality(&self, nation_id: i32) -> bool {
+        // -2 is used as any nation.
+        if nation_id == -2 {
+            return true;
+        }
+        if nation_id == self.nation_id {
+            return true;
+        }
+
+        // -1 means no nation, so we do not want to check that against second nation.
+        return nation_id != -1 && nation_id == self.second_nation_id;
+    }
+
     // Check if the person's name has no special characters.
     pub fn _has_no_special_characters(&self, data: &Data) -> bool {
         let re = Regex::new(r"^[\w ]+$").unwrap();

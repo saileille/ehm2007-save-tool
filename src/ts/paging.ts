@@ -55,6 +55,7 @@ const toPrevPage = () => {
 };
 
 export const initialisePaging = () => {
+    PAGE = 0;
     updatePagingText();
     toggleNextPageButton();
     togglePrevPageButton();

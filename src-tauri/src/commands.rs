@@ -5,15 +5,17 @@ use crate::{data::Data, init::load_bin};
 
 #[tauri::command]
 // Get the players in the save.
-pub fn fetch_players(handle: AppHandle, headers: Vec<String>) -> Vec<Vec<serde_json::Value>> {
+pub fn fetch_players(handle: AppHandle, headers: Vec<String>, nation_id: i32) -> Vec<Vec<serde_json::Value>> {
     let data = handle.state::<Data>();
 
     let mut counter = 0;
-    let players: Vec<Vec<serde_json::Value>> = data
-        .staff
-        .iter()
-        .filter_map(|(_, player)| {
-            let row = player.create_player_view(&data, &headers, counter);
+    let players: Vec<Vec<serde_json::Value>> = data.staff.iter()
+        .filter_map(|(_, person)| {
+            if !person.has_nationality(nation_id) {
+                return None
+            }
+
+            let row = person.create_player_view(&data, &headers, counter);
             counter += 1;
             return row;
         })
@@ -54,8 +56,15 @@ pub fn load_save(handle: AppHandle) {
 // Get data needed to build the filters.
 pub fn get_filter_data(handle: AppHandle) -> Vec<(i32, String)> {
     let data = handle.state::<Data>();
-    let mut nations: Vec<(i32, String)> = data.nations.iter().map(|(id, nation)| (*id, nation.name())).collect();
 
+    let mut nations: Vec<(i32, String)> = data.nations.iter().map(|(id, nation)| (*id, nation.name())).collect();
     nations.sort_by(|a, b| a.1.cmp(&b.1));
-    return nations;
+
+    let mut all_options = Vec::from([
+        (-2, "Any".to_string()),
+        (-1, "N/A".to_string()),
+    ]);
+
+    all_options.append(&mut nations);
+    return all_options;
 }

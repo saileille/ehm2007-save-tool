@@ -77,11 +77,14 @@ const HEADERS = [
 ];
 
 // Get the players from the database.
-const fetchPlayers = async () => {
-    invoke("fetch_players", { "headers": HEADERS }).then((players) => {
+export const fetchPlayers = async (nationId: number) => {
+    invoke("fetch_players", {
+        "headers": HEADERS,
+        "nationId": nationId,
+    }).then((players) => {
         PLAYERS = players as Player[];
-        overwriteTable();
         initialisePaging();
+        overwriteTable();
     });
 };
 
@@ -151,7 +154,7 @@ export const overwriteTable = () => {
     let counter = 0;
     let i = PAGE * ROWS_PER_PAGE;
 
-    while (counter < ROWS_PER_PAGE) {
+    while (counter < ROWS_PER_PAGE && i < PLAYERS.length) {
         const player = PLAYERS[i]
         let tr: HTMLTableRowElement;
 
@@ -234,7 +237,7 @@ const createCell = (content: string | number): HTMLTableCellElement => {
 const loadSave = async () => {
     await invoke("load_save");
     await createPlayerView();
-    await fetchPlayers();
+    await fetchPlayers(-2);
 };
 
 // Add the onclick event for the Load Save button here.
