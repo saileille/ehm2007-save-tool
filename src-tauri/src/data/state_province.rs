@@ -2,19 +2,23 @@ use std::io::Cursor;
 
 use binread::{BinRead, Error};
 
-use crate::{data::{Data, REAL_SHORT_TEXT_LENGTH, STANDARD_TEXT_LENGTH}, init::bytes_to_string, to_bytes::chars_to_bytes};
+use crate::{
+    data::{Data, REAL_SHORT_TEXT_LENGTH, STANDARD_TEXT_LENGTH},
+    init::bytes_to_string,
+    to_bytes::_chars_to_bytes,
+};
 
 #[derive(BinRead, Clone)]
 #[br(little)]
 pub struct StateProvince {
     id: i32,
-    nation_id: i32,
+    _nation_id: i32,
     #[br(count = STANDARD_TEXT_LENGTH)]
-    b_name: Vec<char>,
+    _b_name: Vec<char>,
     #[br(count = STANDARD_TEXT_LENGTH)]
-    b_short_name: Vec<char>,
-    gender_name: i8,
-    b_abbreviation: [char; REAL_SHORT_TEXT_LENGTH as usize],
+    _b_short_name: Vec<char>,
+    _gender_name: i8,
+    _b_abbreviation: [char; REAL_SHORT_TEXT_LENGTH as usize],
 }
 
 impl StateProvince {
@@ -23,31 +27,31 @@ impl StateProvince {
         data.order_states_provinces.push(province.id);
         data.states_provinces.insert(province.id, province);
 
-        return Ok(())
+        return Ok(());
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn _to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());
-        bytes.extend_from_slice(&self.nation_id.to_le_bytes());
-        bytes.append(&mut chars_to_bytes(&self.b_name));
-        bytes.append(&mut chars_to_bytes(&self.b_short_name));
-        bytes.extend_from_slice(&self.gender_name.to_le_bytes());
-        bytes.append(&mut chars_to_bytes(&self.b_abbreviation));
+        bytes.extend_from_slice(&self._nation_id.to_le_bytes());
+        bytes.append(&mut _chars_to_bytes(&self._b_name));
+        bytes.append(&mut _chars_to_bytes(&self._b_short_name));
+        bytes.extend_from_slice(&self._gender_name.to_le_bytes());
+        bytes.append(&mut _chars_to_bytes(&self._b_abbreviation));
 
         return bytes;
     }
 
-    fn name(&self) -> String {
-        return bytes_to_string(&self.b_name);
+    fn _name(&self) -> String {
+        return bytes_to_string(&self._b_name);
     }
 
-    fn short_name(&self) -> String {
-        return bytes_to_string(&self.b_short_name);
+    fn _short_name(&self) -> String {
+        return bytes_to_string(&self._b_short_name);
     }
 
-    pub fn abbreviation(&self) -> String {
-        return bytes_to_string(&self.b_abbreviation);
+    pub fn _abbreviation(&self) -> String {
+        return bytes_to_string(&self._b_abbreviation);
     }
 }

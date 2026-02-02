@@ -8,23 +8,23 @@ use crate::data::{Data, SIDate};
 #[br(little)]
 pub struct Official {
     id: i32,
-    forename_id: i32,
-    surname_id: i32,
-    nation_id: i32,
-    city_id: i32,
-    comp_id: i32,
-    year_of_birth: i16,
-    current_ability: i16,
-    potential_ability: i16,
-    reputation: i16,
-    date_of_birth: SIDate,
-    allowing_roughness: i8,
-    discipline: i8,
-    important_matches: i8,
-    pressure: i8,
-    refereeing: i8,
-    skating_line: i8,
-    allowing_interference: i8,
+    _forename_id: i32,
+    _surname_id: i32,
+    _nation_id: i32,
+    _city_id: i32,
+    _comp_id: i32,
+    _year_of_birth: i16,
+    _current_ability: i16,
+    _potential_ability: i16,
+    _reputation: i16,
+    _date_of_birth: SIDate,
+    _allowing_roughness: i8,
+    _discipline: i8,
+    _important_matches: i8,
+    _pressure: i8,
+    _refereeing: i8,
+    _skating_line: i8,
+    _allowing_interference: i8,
 }
 
 impl Official {
@@ -33,30 +33,30 @@ impl Official {
         data.order_officials.push(official.id);
         data.officials.insert(official.id, official);
 
-        return Ok(())
+        return Ok(());
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn _to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());
-        bytes.extend_from_slice(&self.forename_id.to_le_bytes());
-        bytes.extend_from_slice(&self.surname_id.to_le_bytes());
-        bytes.extend_from_slice(&self.nation_id.to_le_bytes());
-        bytes.extend_from_slice(&self.city_id.to_le_bytes());
-        bytes.extend_from_slice(&self.comp_id.to_le_bytes());
-        bytes.extend_from_slice(&self.year_of_birth.to_le_bytes());
-        bytes.extend_from_slice(&self.current_ability.to_le_bytes());
-        bytes.extend_from_slice(&self.potential_ability.to_le_bytes());
-        bytes.extend_from_slice(&self.reputation.to_le_bytes());
-        bytes.append(&mut self.date_of_birth.to_bytes());
-        bytes.extend_from_slice(&self.allowing_roughness.to_le_bytes());
-        bytes.extend_from_slice(&self.discipline.to_le_bytes());
-        bytes.extend_from_slice(&self.important_matches.to_le_bytes());
-        bytes.extend_from_slice(&self.pressure.to_le_bytes());
-        bytes.extend_from_slice(&self.refereeing.to_le_bytes());
-        bytes.extend_from_slice(&self.skating_line.to_le_bytes());
-        bytes.extend_from_slice(&self.allowing_interference.to_le_bytes());
+        bytes.extend_from_slice(&self._forename_id.to_le_bytes());
+        bytes.extend_from_slice(&self._surname_id.to_le_bytes());
+        bytes.extend_from_slice(&self._nation_id.to_le_bytes());
+        bytes.extend_from_slice(&self._city_id.to_le_bytes());
+        bytes.extend_from_slice(&self._comp_id.to_le_bytes());
+        bytes.extend_from_slice(&self._year_of_birth.to_le_bytes());
+        bytes.extend_from_slice(&self._current_ability.to_le_bytes());
+        bytes.extend_from_slice(&self._potential_ability.to_le_bytes());
+        bytes.extend_from_slice(&self._reputation.to_le_bytes());
+        bytes.append(&mut self._date_of_birth._to_bytes());
+        bytes.extend_from_slice(&self._allowing_roughness.to_le_bytes());
+        bytes.extend_from_slice(&self._discipline.to_le_bytes());
+        bytes.extend_from_slice(&self._important_matches.to_le_bytes());
+        bytes.extend_from_slice(&self._pressure.to_le_bytes());
+        bytes.extend_from_slice(&self._refereeing.to_le_bytes());
+        bytes.extend_from_slice(&self._skating_line.to_le_bytes());
+        bytes.extend_from_slice(&self._allowing_interference.to_le_bytes());
 
         return bytes;
     }

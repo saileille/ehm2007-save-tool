@@ -2,34 +2,42 @@
 
 pub mod db;
 
-use std::{collections::HashMap, fs::{self, File}, io::{Cursor, Read as _, Write as _}, path::{Path, PathBuf}};
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    io::{Cursor, Read as _, Write as _},
+    path::{Path, PathBuf},
+};
 
-use crate::{attr_chart::{AttributeChart, attr_chart}, data::{Data, staff::Staff}, init::{get_parser_guide, load_save, parse_file}};
+use crate::{
+    data::{staff::Staff, Data},
+    init::{get_parser_guide, load_save, parse_file},
+};
 
-type AttributeData = HashMap<i16, HashMap<i8, HashMap<i8, usize>>>;
+type _AttributeData = HashMap<i16, HashMap<i8, HashMap<i8, usize>>>;
 
-pub fn load_databases(folder_name: &str) {
+pub fn _load_databases(folder_name: &str) {
     let mut attr_data = HashMap::new();
-    let mut missing_data = HashMap::new();
 
     let folder = Path::new(folder_name);
-    let chart = attr_chart();
 
     for db_folder in fs::read_dir(folder).unwrap() {
         let mut path_buf = db_folder.unwrap().path();
-        if path_buf.is_file() { continue; }
+        if path_buf.is_file() {
+            continue;
+        }
 
-        let (db_attr, db_missing) = load_player_data(&chart, &mut path_buf);
-        add_attr(&mut attr_data, db_attr);
-        add_attr(&mut missing_data, db_missing);
+        let db_attr = _load_player_data(&mut path_buf);
+        _add_attr(&mut attr_data, db_attr);
     }
 
-    let folder = Path::new("D:/Programs/NHL Eastside Hockey Manager 2007/tools/Own Projects/attribute conversion");
-    write_attr_research(folder, "_research", &attr_data);
-    write_attr_research(folder, "_missing", &missing_data);
+    let folder = Path::new(
+        "D:/Programs/NHL Eastside Hockey Manager 2007/tools/Own Projects/attribute conversion",
+    );
+    _write_attr_research(folder, "_research", &attr_data);
 }
 
-fn load_player_data(chart: &AttributeChart, folder: &mut PathBuf) -> (AttributeData, AttributeData) {
+fn _load_player_data(folder: &mut PathBuf) -> _AttributeData {
     folder.push("test.sav");
     let folder_name = folder.to_str().unwrap();
     let file = match File::open(folder_name) {
@@ -43,17 +51,16 @@ fn load_player_data(chart: &AttributeChart, folder: &mut PathBuf) -> (AttributeD
     // Remove the save file from the buffer.
     folder.pop();
 
-    let db = load_database(folder);
+    let db = _load_database(folder);
 
-    let (attr_data, missing_data) = add_to_research(chart, &save, &db);
+    let attr_data = _add_to_research(&save, &db);
 
-    write_attr_research(folder, "_research.txt", &attr_data);
-    write_attr_research(folder, "_missing.txt", &missing_data);
+    _write_attr_research(folder, "_research.txt", &attr_data);
 
-    return (attr_data, missing_data)
+    return attr_data;
 }
 
-fn load_database(folder: &mut PathBuf) -> Data {
+fn _load_database(folder: &mut PathBuf) -> Data {
     let parser_guide = get_parser_guide();
 
     let mut db_data = Data::default();
@@ -73,7 +80,13 @@ fn load_database(folder: &mut PathBuf) -> Data {
         let file_size = buffer.len() as u64;
         let mut cursor = Cursor::new(buffer);
 
-        parse_file(&mut cursor, &parser, &mut db_data, file_size, filename.as_str());
+        parse_file(
+            &mut cursor,
+            &parser,
+            &mut db_data,
+            file_size,
+            filename.as_str(),
+        );
 
         // Remove the previous filename from the buffer.
         folder.pop();
@@ -82,17 +95,19 @@ fn load_database(folder: &mut PathBuf) -> Data {
     return db_data;
 }
 
-fn add_to_research(chart: &AttributeChart, save: &Data, db: &Data) -> (AttributeData, AttributeData) {
-    let db_staff = get_staff_hash(&db);
-    let mut save_staff = get_staff_hash(save);
+fn _add_to_research(
+    save: &Data,
+    db: &Data,
+) -> _AttributeData {
+    let db_staff = _get_staff_hash(&db);
+    let mut save_staff = _get_staff_hash(save);
 
     let mut attr_data = HashMap::new();
-    let mut missing_data = HashMap::new();
 
-    let players: Vec<db::Player> = db_staff.iter().filter_map(
-        |(id, db_person)|
-        db_person.merge_players(&db, &save, &id, &mut save_staff)
-    ).collect();
+    let players: Vec<db::_Player> = db_staff
+        .iter()
+        .filter_map(|(id, db_person)| db_person._merge_players(&db, &save, &id, &mut save_staff))
+        .collect();
 
     // let mut path_buf = folder.to_path_buf();
     // path_buf.push("_research.csv");
@@ -103,7 +118,7 @@ fn add_to_research(chart: &AttributeChart, save: &Data, db: &Data) -> (Attribute
 
     for player in players {
         // rowlist.push(player.create_csv_row());
-        player.add_to_attr_data(chart, &mut attr_data, &mut missing_data);
+        player._add_to_attr_data(&mut attr_data);
     }
 
     // let string = rowlist.join("\n");
@@ -111,10 +126,10 @@ fn add_to_research(chart: &AttributeChart, save: &Data, db: &Data) -> (Attribute
     // let mut file = File::create(path_buf).unwrap();
     // file.write_all(string.as_bytes()).unwrap();
 
-    return (attr_data, missing_data);
+    return attr_data;
 }
 
-fn get_staff_hash(data: &Data) -> HashMap<[String; 6], Staff> {
+fn _get_staff_hash(data: &Data) -> HashMap<[String; 6], Staff> {
     let mut staff = HashMap::new();
 
     for (_, person) in data.staff.iter() {
@@ -125,7 +140,7 @@ fn get_staff_hash(data: &Data) -> HashMap<[String; 6], Staff> {
         let key = [
             person.forename(data),
             person.surname(data),
-            person.birthplace(data),
+            person._birthplace(data),
             person.nation_name(data),
             person.second_nation_name(data),
             person.club_contracted_name(data),
@@ -142,7 +157,7 @@ fn get_staff_hash(data: &Data) -> HashMap<[String; 6], Staff> {
 }
 
 // Write a text and JSON file about the database findings.
-fn write_attr_research(folder: &Path, filename: &str, attr_data: &AttributeData) {
+fn _write_attr_research(folder: &Path, filename: &str, attr_data: &_AttributeData) {
     let mut path_buf = folder.to_path_buf();
     path_buf.push(format!("{filename}.json"));
     let mut file = File::create(&path_buf).unwrap();
@@ -154,11 +169,11 @@ fn write_attr_research(folder: &Path, filename: &str, attr_data: &AttributeData)
     path_buf.push(format!("{filename}.txt"));
     file = File::create(&path_buf).unwrap();
 
-    let sorted_attr_data = sorted_attr_data(attr_data);
+    let sorted_attr_data = _sorted_attr_data(attr_data);
     file.write_all(sorted_attr_data.as_bytes()).unwrap();
 }
 
-fn sorted_attr_data(data: &AttributeData) -> String {
+fn _sorted_attr_data(data: &_AttributeData) -> String {
     let mut ca_keys: Vec<i16> = data.keys().map(|k| *k).collect();
     ca_keys.sort();
 
@@ -173,7 +188,10 @@ fn sorted_attr_data(data: &AttributeData) -> String {
 
         for save_attr_key in save_attr_keys {
             let attr_data = ca_data.get(&save_attr_key).unwrap();
-            let mut data_pairs: Vec<(i8, usize)> = attr_data.iter().map(|(db_attr, count)| (*db_attr, *count)).collect();
+            let mut data_pairs: Vec<(i8, usize)> = attr_data
+                .iter()
+                .map(|(db_attr, count)| (*db_attr, *count))
+                .collect();
             data_pairs.sort_by(|(_, a), (_, b)| b.cmp(a));
 
             sorted_data.push(format!("\tDB Attribute: {save_attr_key}"));
@@ -187,7 +205,7 @@ fn sorted_attr_data(data: &AttributeData) -> String {
 }
 
 // Add database-specific attribute data to the main attribute data.
-fn add_attr(main: &mut AttributeData, db: AttributeData) {
+fn _add_attr(main: &mut _AttributeData, db: _AttributeData) {
     for (ca, ca_data) in db {
         if !main.contains_key(&ca) {
             main.insert(ca, ca_data);
@@ -205,8 +223,7 @@ fn add_attr(main: &mut AttributeData, db: AttributeData) {
             for (save_attr, count) in db_attr_data {
                 if !main_db_attr.contains_key(&save_attr) {
                     main_db_attr.insert(save_attr, count);
-                }
-                else {
+                } else {
                     *main_db_attr.get_mut(&save_attr).unwrap() += count;
                 }
             }

@@ -4,39 +4,42 @@ use binread::{BinRead, Error};
 use regex::Regex;
 use serde_json::json;
 
-use crate::{attr_chart::AttributeChart, data::{Data, SIDate, city::City, club::Club, nation::Nation, player::Player}, research::db};
+use crate::{
+    data::{city::City, club::Club, nation::Nation, player::Player, Data, SIDate},
+    research::db,
+};
 
 #[derive(BinRead, Clone)]
 #[br(little)]
 pub struct Staff {
     pub id: i32,
-    estimated_wage: i32,
-    estimated_value: i32,
+    _estimated_wage: i32,
+    _estimated_value: i32,
     nation_id: i32,
     second_nation_id: i32,
     player_data_id: i32,
-    preferences_id: i32,
-    non_player_data_id: i32,
-    nation_contracted_id: i32,
+    _preferences_id: i32,
+    _non_player_data_id: i32,
+    _nation_contracted_id: i32,
     pub club_contracted_id: i32,
     club_playing_id: i32,
-    player_rights_index: i32,
-    birth_town_id: i32,
+    _player_rights_index: i32,
+    _birth_town_id: i32,
     forename_id: i32,
     surname_id: i32,
     date_of_birth: SIDate,
-    date_joined_nation: SIDate,
-    contract_expires_nation: SIDate,
-    date_joined_club: SIDate,
-    contract_expires_club: SIDate,
-    first_pro_contract: SIDate,
-    pub age: i16,
-    international_apps: u8,
-    international_goals: u8,
-    international_assists: u8,
-    job_for_nation: i8,
+    _date_joined_nation: SIDate,
+    _contract_expires_nation: SIDate,
+    _date_joined_club: SIDate,
+    _contract_expires_club: SIDate,
+    _first_pro_contract: SIDate,
+    pub _age: i16,
+    _international_apps: u8,
+    _international_goals: u8,
+    _international_assists: u8,
+    _job_for_nation: i8,
     adaptability: i8,
-    job_for_club: i8,
+    _job_for_club: i8,
     ambition: i8,
     determination: i8,
     loyalty: i8,
@@ -44,14 +47,14 @@ pub struct Staff {
     professionalism: i8,
     sportsmanship: i8,
     temperament: i8,
-    playing_squad: i8,
-    classification: i8,
-    club_valuation: i8,
-    declared_nation: i8,
-    stanley_cups_won: i8,
-    squad_selected_for: i8,
-    national_team_job_level: i8,
-    estimated_wage_weekly: i32,
+    _playing_squad: i8,
+    _classification: i8,
+    _club_valuation: i8,
+    _declared_nation: i8,
+    _stanley_cups_won: i8,
+    _squad_selected_for: i8,
+    _national_team_job_level: i8,
+    _estimated_wage_weekly: i32,
 }
 
 impl Staff {
@@ -60,40 +63,40 @@ impl Staff {
         data.order_staff.push(staff.id);
         data.staff.insert(staff.id, staff);
 
-        return Ok(())
+        return Ok(());
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn _to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());
-        bytes.extend_from_slice(&self.estimated_wage.to_le_bytes());
-        bytes.extend_from_slice(&self.estimated_value.to_le_bytes());
+        bytes.extend_from_slice(&self._estimated_wage.to_le_bytes());
+        bytes.extend_from_slice(&self._estimated_value.to_le_bytes());
         bytes.extend_from_slice(&self.nation_id.to_le_bytes());
         bytes.extend_from_slice(&self.second_nation_id.to_le_bytes());
         bytes.extend_from_slice(&self.player_data_id.to_le_bytes());
-        bytes.extend_from_slice(&self.preferences_id.to_le_bytes());
-        bytes.extend_from_slice(&self.non_player_data_id.to_le_bytes());
-        bytes.extend_from_slice(&self.nation_contracted_id.to_le_bytes());
+        bytes.extend_from_slice(&self._preferences_id.to_le_bytes());
+        bytes.extend_from_slice(&self._non_player_data_id.to_le_bytes());
+        bytes.extend_from_slice(&self._nation_contracted_id.to_le_bytes());
         bytes.extend_from_slice(&self.club_contracted_id.to_le_bytes());
         bytes.extend_from_slice(&self.club_playing_id.to_le_bytes());
-        bytes.extend_from_slice(&self.player_rights_index.to_le_bytes());
-        bytes.extend_from_slice(&self.birth_town_id.to_le_bytes());
+        bytes.extend_from_slice(&self._player_rights_index.to_le_bytes());
+        bytes.extend_from_slice(&self._birth_town_id.to_le_bytes());
         bytes.extend_from_slice(&self.forename_id.to_le_bytes());
         bytes.extend_from_slice(&self.surname_id.to_le_bytes());
-        bytes.append(&mut self.date_of_birth.to_bytes());
-        bytes.append(&mut self.date_joined_nation.to_bytes());
-        bytes.append(&mut self.contract_expires_nation.to_bytes());
-        bytes.append(&mut self.date_joined_club.to_bytes());
-        bytes.append(&mut self.contract_expires_club.to_bytes());
-        bytes.append(&mut self.first_pro_contract.to_bytes());
-        bytes.extend_from_slice(&self.age.to_le_bytes());
-        bytes.extend_from_slice(&self.international_apps.to_le_bytes());
-        bytes.extend_from_slice(&self.international_goals.to_le_bytes());
-        bytes.extend_from_slice(&self.international_assists.to_le_bytes());
-        bytes.extend_from_slice(&self.job_for_nation.to_le_bytes());
+        bytes.append(&mut self.date_of_birth._to_bytes());
+        bytes.append(&mut self._date_joined_nation._to_bytes());
+        bytes.append(&mut self._contract_expires_nation._to_bytes());
+        bytes.append(&mut self._date_joined_club._to_bytes());
+        bytes.append(&mut self._contract_expires_club._to_bytes());
+        bytes.append(&mut self._first_pro_contract._to_bytes());
+        bytes.extend_from_slice(&self._age.to_le_bytes());
+        bytes.extend_from_slice(&self._international_apps.to_le_bytes());
+        bytes.extend_from_slice(&self._international_goals.to_le_bytes());
+        bytes.extend_from_slice(&self._international_assists.to_le_bytes());
+        bytes.extend_from_slice(&self._job_for_nation.to_le_bytes());
         bytes.extend_from_slice(&self.adaptability.to_le_bytes());
-        bytes.extend_from_slice(&self.job_for_club.to_le_bytes());
+        bytes.extend_from_slice(&self._job_for_club.to_le_bytes());
         bytes.extend_from_slice(&self.ambition.to_le_bytes());
         bytes.extend_from_slice(&self.determination.to_le_bytes());
         bytes.extend_from_slice(&self.loyalty.to_le_bytes());
@@ -101,14 +104,14 @@ impl Staff {
         bytes.extend_from_slice(&self.professionalism.to_le_bytes());
         bytes.extend_from_slice(&self.sportsmanship.to_le_bytes());
         bytes.extend_from_slice(&self.temperament.to_le_bytes());
-        bytes.extend_from_slice(&self.playing_squad.to_le_bytes());
-        bytes.extend_from_slice(&self.classification.to_le_bytes());
-        bytes.extend_from_slice(&self.club_valuation.to_le_bytes());
-        bytes.extend_from_slice(&self.declared_nation.to_le_bytes());
-        bytes.extend_from_slice(&self.stanley_cups_won.to_le_bytes());
-        bytes.extend_from_slice(&self.squad_selected_for.to_le_bytes());
-        bytes.extend_from_slice(&self.national_team_job_level.to_le_bytes());
-        bytes.extend_from_slice(&self.estimated_wage_weekly.to_le_bytes());
+        bytes.extend_from_slice(&self._playing_squad.to_le_bytes());
+        bytes.extend_from_slice(&self._classification.to_le_bytes());
+        bytes.extend_from_slice(&self._club_valuation.to_le_bytes());
+        bytes.extend_from_slice(&self._declared_nation.to_le_bytes());
+        bytes.extend_from_slice(&self._stanley_cups_won.to_le_bytes());
+        bytes.extend_from_slice(&self._squad_selected_for.to_le_bytes());
+        bytes.extend_from_slice(&self._national_team_job_level.to_le_bytes());
+        bytes.extend_from_slice(&self._estimated_wage_weekly.to_le_bytes());
 
         return bytes;
     }
@@ -121,29 +124,31 @@ impl Staff {
         return data.surnames.get(&self.surname_id).unwrap().name();
     }
 
-    fn birth_town(&self, data: &Data) -> Option<City> {
-        return data.cities.get(&self.birth_town_id).cloned();
+    fn _birth_town(&self, data: &Data) -> Option<City> {
+        return data.cities.get(&self._birth_town_id).cloned();
     }
 
-    pub fn birthplace(&self, data: &Data) -> String {
-        let town = self.birth_town(data);
-        if town.is_none() { return String::new(); }
+    pub fn _birthplace(&self, data: &Data) -> String {
+        let town = self._birth_town(data);
+        if town.is_none() {
+            return String::new();
+        }
         let town = town.unwrap();
 
-        let state_string = match town.state_abbreviation(data) {
+        let state_string = match town._state_abbreviation(data) {
             Some(s) => format!(", {s}"),
             None => String::new(),
         };
 
-        let nation_string = match town.nation_three_letter_name(data) {
+        let nation_string = match town._nation_three_letter_name(data) {
             Some(s) => format!(", {s}"),
             None => String::new(),
         };
 
-        return format!("{}{}{}", town.name(), state_string, nation_string);
+        return format!("{}{}{}", town._name(), state_string, nation_string);
     }
 
-    fn nation(&self, data: &Data) -> Nation {
+    fn _nation(&self, data: &Data) -> Nation {
         return data.nations.get(&self.nation_id).cloned().unwrap();
     }
 
@@ -154,21 +159,21 @@ impl Staff {
         };
     }
 
-    fn nation_short_name(&self, data: &Data) -> String {
+    fn _nation_short_name(&self, data: &Data) -> String {
         return match data.nations.get(&self.nation_id) {
-            Some(n) => n.short_name(),
-            None => String::new()
+            Some(n) => n._short_name(),
+            None => String::new(),
         };
     }
 
-    pub fn nation_three_letter_name(&self, data: &Data) -> String {
+    pub fn _nation_three_letter_name(&self, data: &Data) -> String {
         return match data.nations.get(&self.nation_id) {
-            Some(n) => n.three_letter_name(),
-            None => String::new()
+            Some(n) => n._three_letter_name(),
+            None => String::new(),
         };
     }
 
-    fn second_nation(&self, data: &Data) -> Option<Nation> {
+    fn _second_nation(&self, data: &Data) -> Option<Nation> {
         return data.nations.get(&self.second_nation_id).cloned();
     }
 
@@ -179,21 +184,21 @@ impl Staff {
         };
     }
 
-    fn second_nation_short_name(&self, data: &Data) -> String {
+    fn _second_nation_short_name(&self, data: &Data) -> String {
         return match data.nations.get(&self.second_nation_id) {
-            Some(n) => n.short_name(),
+            Some(n) => n._short_name(),
             None => String::new(),
         };
     }
 
-    pub fn second_nation_three_letter_name(&self, data: &Data) -> String {
+    pub fn _second_nation_three_letter_name(&self, data: &Data) -> String {
         return match data.nations.get(&self.second_nation_id) {
-            Some(n) => n.three_letter_name(),
+            Some(n) => n._three_letter_name(),
             None => String::new(),
         };
     }
 
-    fn club_contracted(&self, data: &Data) -> Option<Club> {
+    fn _club_contracted(&self, data: &Data) -> Option<Club> {
         return data.clubs.get(&self.club_contracted_id).cloned();
     }
 
@@ -204,14 +209,14 @@ impl Staff {
         };
     }
 
-    pub fn club_contracted_short_name(&self, data: &Data) -> String {
+    pub fn _club_contracted_short_name(&self, data: &Data) -> String {
         return match data.clubs.get(&self.club_contracted_id) {
-            Some(c) => c.short_name(),
+            Some(c) => c._short_name(),
             None => String::new(),
         };
     }
 
-    fn club_playing(&self, data: &Data) -> Option<Club> {
+    fn _club_playing(&self, data: &Data) -> Option<Club> {
         return data.clubs.get(&self.club_playing_id).cloned();
     }
 
@@ -222,9 +227,9 @@ impl Staff {
         };
     }
 
-    pub fn club_playing_short_name(&self, data: &Data) -> String {
+    pub fn _club_playing_short_name(&self, data: &Data) -> String {
         return match data.clubs.get(&self.club_playing_id) {
-            Some(c) => c.short_name(),
+            Some(c) => c._short_name(),
             None => String::new(),
         };
     }
@@ -238,13 +243,13 @@ impl Staff {
     }
 
     // Check if the person's name has no special characters.
-    pub fn has_no_special_characters(&self, data: &Data) -> bool {
+    pub fn _has_no_special_characters(&self, data: &Data) -> bool {
         let re = Regex::new(r"^[\w ]+$").unwrap();
         re.is_match(format!("{} {}", self.forename(data), self.surname(data)).as_str())
     }
 
     // Create an array of player data.
-    pub fn create_player_view(&self, data: &Data) -> Option<serde_json::Value> {
+    pub fn create_player_view(&self, data: &Data, counter: usize) -> Option<serde_json::Value> {
         let p_option = self.player_data(data);
         if p_option.is_none() {
             return None;
@@ -252,7 +257,7 @@ impl Staff {
 
         let p = p_option.unwrap();
         return Some(json!([
-            0.0,    // Used later as random seed.
+            counter, // Used as random seed.
             self.forename(data),
             self.surname(data),
             self.nation_name(data),
@@ -273,28 +278,28 @@ impl Staff {
             p.acceleration,
             p.aggression,
             p.agility,
-            p.convert_attribute(&data.attr_chart, "Anticipation"),
-            p.convert_attribute(&data.attr_chart, "Balance"),
+            p.convert_attribute("Anticipation"),
+            p.convert_attribute("Balance"),
             p.bravery,
             p.consistency,
-            p.convert_attribute(&data.attr_chart, "Decisions"),
+            p.convert_attribute("Decisions"),
             p.dirtiness,
             p.flair,
             p.important_matches,
             p.injury_proneness,
             p.leadership,
-            p.convert_attribute(&data.attr_chart, "Off The Puck"),
+            p.convert_attribute("Off The Puck"),
             p.natural_fitness,
-            p.convert_attribute(&data.attr_chart, "One On Ones"),
+            p.convert_attribute("One On Ones"),
             p.pace,
-            p.convert_attribute(&data.attr_chart, "Passing"),
-            p.convert_attribute(&data.attr_chart, "Positioning"),
-            p.convert_attribute(&data.attr_chart, "Reflexes"),
+            p.convert_attribute("Passing"),
+            p.convert_attribute("Positioning"),
+            p.convert_attribute("Reflexes"),
             p.stamina,
             p.strength,
             p.teamwork,
             p.versatility,
-            p.convert_attribute(&data.attr_chart, "Creativity"),
+            p.convert_attribute("Creativity"),
             p.work_rate,
             p.goaltender,
             p.left_defence,
@@ -303,43 +308,50 @@ impl Staff {
             p.center,
             p.right_wing,
             p.agitation,
-            p.convert_attribute(&data.attr_chart, "Blocker"),
-            p.convert_attribute(&data.attr_chart, "Checking"),
+            p.convert_attribute("Blocker"),
+            p.convert_attribute("Checking"),
             p.defensive_role,
-            p.convert_attribute(&data.attr_chart, "Deflections"),
-            p.convert_attribute(&data.attr_chart, "Deking"),
-            p.convert_attribute(&data.attr_chart, "Faceoffs"),
-            p.convert_attribute(&data.attr_chart, "Fighting"),
-            p.convert_attribute(&data.attr_chart, "Glove"),
-            p.convert_attribute(&data.attr_chart, "Hitting"),
+            p.convert_attribute("Deflections"),
+            p.convert_attribute("Deking"),
+            p.convert_attribute("Faceoffs"),
+            p.convert_attribute("Fighting"),
+            p.convert_attribute("Glove"),
+            p.convert_attribute("Hitting"),
             p.offensive_role,
             p.pass_tendency,
-            p.convert_attribute(&data.attr_chart, "Pokecheck"),
-            p.convert_attribute(&data.attr_chart, "Rebound Control"),
-            p.convert_attribute(&data.attr_chart, "Recovery"),
-            p.convert_attribute(&data.attr_chart, "Slapshot"),
-            p.convert_attribute(&data.attr_chart, "Stickhandling"),
-            p.convert_attribute(&data.attr_chart, "Wristshot"),
-
+            p.convert_attribute("Pokecheck"),
+            p.convert_attribute("Rebound Control"),
+            p.convert_attribute("Recovery"),
+            p.convert_attribute("Slapshot"),
+            p.convert_attribute("Stickhandling"),
+            p.convert_attribute("Wristshot"),
         ]));
     }
 
-    pub fn merge_players(&self, db: &Data, save: &Data, key: &[String; 6], save_staff: &mut HashMap<[String; 6], Staff>) -> Option<db::Player> {
+    pub fn _merge_players(
+        &self,
+        db: &Data,
+        save: &Data,
+        key: &[String; 6],
+        save_staff: &mut HashMap<[String; 6], Staff>,
+    ) -> Option<db::_Player> {
         let db_player = self.player_data(&db).unwrap();
 
         let save_person = save_staff.remove(key);
-        if save_person.is_none() { return None; }
+        if save_person.is_none() {
+            return None;
+        }
         let save_person = save_person.unwrap();
         let save_player = save_person.player_data(save).unwrap();
 
-        return Some(db::Player {
+        return Some(db::_Player {
             forename: self.forename(db),
             surname: self.surname(db),
-            age: save_person.age,
-            birthplace: save_person.birthplace(save),
-            nation: save_person.nation_three_letter_name(save),
-            second_nation: save_person.second_nation_three_letter_name(save),
-            club: save_person.club_playing_short_name(save),
+            age: save_person._age,
+            birthplace: save_person._birthplace(save),
+            nation: save_person._nation_three_letter_name(save),
+            second_nation: save_person._second_nation_three_letter_name(save),
+            club: save_person._club_playing_short_name(save),
             current_ability: save_player.current_ability,
             anticipation_save: save_player.anticipation_raw,
             anticipation_db: db_player.anticipation_raw,
@@ -375,7 +387,7 @@ impl Staff {
             glove_db: db_player.glove_raw,
             hitting_save: save_player.hitting_raw,
             hitting_db: db_player.hitting_raw,
-            pokecheck_save:save_player.pokecheck_raw,
+            pokecheck_save: save_player.pokecheck_raw,
             pokecheck_db: db_player.pokecheck_raw,
             rebounds_save: save_player.rebounds_raw,
             rebounds_db: db_player.rebounds_raw,

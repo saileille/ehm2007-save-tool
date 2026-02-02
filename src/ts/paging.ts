@@ -15,7 +15,8 @@ const updatePagingText = () => {
 
 const toggleNextPageButton = () => {
     const button = document.getElementById("next-page") as HTMLButtonElement;
-    if (PAGE + 1 === getPageCount()) {
+    const pageCount = getPageCount();
+    if (PAGE + 1 === pageCount || pageCount === 0) {
         button.disabled = true;
     }
     else {
@@ -34,7 +35,6 @@ const togglePrevPageButton = () => {
 };
 
 const toNextPage = () => {
-    console.log("Next page...");
     PAGE++;
     overwriteTable();
 
@@ -45,7 +45,6 @@ const toNextPage = () => {
 };
 
 const toPrevPage = () => {
-    console.log("Previous page...");
     PAGE--;
     overwriteTable();
 

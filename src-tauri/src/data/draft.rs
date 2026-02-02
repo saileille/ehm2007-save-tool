@@ -2,26 +2,30 @@ use std::io::Cursor;
 
 use binread::{BinRead, Error};
 
-use crate::{data::{Data, STANDARD_TEXT_LENGTH}, init::bytes_to_string, to_bytes::chars_to_bytes};
+use crate::{
+    data::{Data, STANDARD_TEXT_LENGTH},
+    init::bytes_to_string,
+    to_bytes::_chars_to_bytes,
+};
 
 #[derive(BinRead, Clone)]
 #[br(little)]
 pub struct Draft {
     id: i32,
-    comp_id: i32,
+    _comp_id: i32,
     #[br(count = STANDARD_TEXT_LENGTH)]
-    b_name: Vec<char>,
-    gender_name: i8,
-    b_is_extinct: u8,
+    _b_name: Vec<char>,
+    _gender_name: i8,
+    _b_is_extinct: u8,
 }
 
 impl Draft {
-    fn name(&self) -> String {
-        return bytes_to_string(&self.b_name);
+    fn _name(&self) -> String {
+        return bytes_to_string(&self._b_name);
     }
 
-    fn is_extinct(&self) -> bool {
-        return self.b_is_extinct != 0;
+    fn _is_extinct(&self) -> bool {
+        return self._b_is_extinct != 0;
     }
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
@@ -29,17 +33,17 @@ impl Draft {
         data.order_drafts.push(draft.id);
         data.drafts.insert(draft.id, draft);
 
-        return Ok(())
+        return Ok(());
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn _to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());
-        bytes.extend_from_slice(&self.comp_id.to_le_bytes());
-        bytes.append(&mut chars_to_bytes(&self.b_name));
-        bytes.extend_from_slice(&self.gender_name.to_le_bytes());
-        bytes.extend_from_slice(&self.b_is_extinct.to_le_bytes());
+        bytes.extend_from_slice(&self._comp_id.to_le_bytes());
+        bytes.append(&mut _chars_to_bytes(&self._b_name));
+        bytes.extend_from_slice(&self._gender_name.to_le_bytes());
+        bytes.extend_from_slice(&self._b_is_extinct.to_le_bytes());
 
         return bytes;
     }

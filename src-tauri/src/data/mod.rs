@@ -25,7 +25,16 @@ use std::{collections::HashMap, io::Cursor, mem};
 
 use binread::BinRead;
 
-use crate::{attr_chart::{AttributeChart, attr_chart}, data::{arena::Arena, city::City, club::Club, colour::Colour, competition::Competition, competition_history::CompetitionHistory, continent::Continent, currency::Currency, draft::Draft, injury::Injury, name::Name, nation::Nation, non_player::NonPlayer, official::Official, player::Player, retired_number::RetiredNumber, staff::Staff, staff_award::StaffAward, staff_preferences::StaffPreferences, stage_name::StageName, state_province::StateProvince}, init::{FileIndex, Header, read_file_indexes}};
+use crate::{
+    data::{
+        arena::Arena, city::City, club::Club, colour::Colour, competition::Competition,
+        competition_history::CompetitionHistory, continent::Continent, currency::Currency,
+        draft::Draft, injury::Injury, name::Name, nation::Nation, non_player::NonPlayer,
+        official::Official, player::Player, retired_number::RetiredNumber, staff::Staff,
+        staff_award::StaffAward, staff_preferences::StaffPreferences, stage_name::StageName,
+        state_province::StateProvince,
+    }, globals::attr_chart::ATTRIBUTE_CHART, init::{FileIndex, Header, read_file_indexes}
+};
 
 static LONG_TEXT_LENGTH: u8 = 101;
 static STANDARD_TEXT_LENGTH: u8 = 51;
@@ -34,13 +43,10 @@ static REAL_SHORT_TEXT_LENGTH: u8 = 6;
 static THREE_LETTER_TEXT_LENGTH: u8 = 4;
 static SIX_LETTER_TEXT_LENGTH: u8 = 7;
 
-
 // Everything.
 #[derive(Default, Clone)]
 pub struct Data {
-    attr_chart: AttributeChart,
-
-    pub header: Option<Header>,
+    pub _header: Option<Header>,
     pub file_indexes: Vec<FileIndex>,
 
     continents: HashMap<i32, Continent>,
@@ -59,7 +65,7 @@ pub struct Data {
     nations: HashMap<i32, Nation>,
     arenas: HashMap<i32, Arena>,
     pub staff: HashMap<i32, Staff>,
-    nonplayers: Vec<(i32, NonPlayer)>,  // Multiple IDs can exist?
+    nonplayers: Vec<(i32, NonPlayer)>, // Multiple IDs can exist?
     pub players: HashMap<i32, Player>,
     staff_preferences: HashMap<i32, StaffPreferences>,
     retired_numbers: HashMap<i32, RetiredNumber>,
@@ -104,8 +110,7 @@ impl Data {
         let header = Header::read(cursor).unwrap();
         let file_indexes = read_file_indexes(cursor, &header);
         Self {
-            attr_chart: attr_chart(),
-            header: Some(header),
+            _header: Some(header),
             file_indexes,
 
             ..Default::default()
@@ -113,35 +118,185 @@ impl Data {
     }
 
     // Get a save file of the data.
-    pub fn save_file(&mut self) -> Vec<u8> {
+    pub fn _save_file(&mut self) -> Vec<u8> {
         // Encode all save data.
         let mut encoded = self.binaries.clone();
 
-        encoded.insert("continent.dat".to_string(), self.order_continents.iter().flat_map(|id| self.continents.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("officials.dat".to_string(), self.order_officials.iter().flat_map(|id| self.officials.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("first_names.dat".to_string(), self.order_forenames.iter().flat_map(|id| self.forenames.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("second_names.dat".to_string(), self.order_surnames.iter().flat_map(|id| self.surnames.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("city.dat".to_string(), self.order_cities.iter().flat_map(|id| self.cities.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("club.dat".to_string(), self.order_clubs.iter().flat_map(|id| self.clubs.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("nat_club.dat".to_string(), self.order_nat_clubs.iter().flat_map(|id| self.nat_clubs.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("staff_comp.dat".to_string(), self.order_staff_awards.iter().flat_map(|id| self.staff_awards.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("club_comp.dat".to_string(), self.order_competitions.iter().flat_map(|id| self.competitions.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("nation_comp.dat".to_string(), self.order_nat_competitions.iter().flat_map(|id| self.nat_competitions.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("club_comp_history.dat".to_string(), self.order_comp_history.iter().flat_map(|id| self.comp_history.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("nation_comp_history.dat".to_string(), self.order_nat_comp_history.iter().flat_map(|id| self.nat_comp_history.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("colour.dat".to_string(), self.order_colours.iter().flat_map(|id| self.colours.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("nation.dat".to_string(), self.order_nations.iter().flat_map(|id| self.nations.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("stadium.dat".to_string(), self.order_arenas.iter().flat_map(|id| self.arenas.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("staff.dat".to_string(), self.order_staff.iter().flat_map(|id| self.staff.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("nonplayer.dat".to_string(), self.nonplayers.iter().flat_map(|(_, a)| a.to_bytes()).collect());
-        encoded.insert("player.dat".to_string(), self.order_players.iter().flat_map(|id| self.players.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("staff_preferences.dat".to_string(), self.order_staff_preferences.iter().flat_map(|id| self.staff_preferences.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("retired_numbers.dat".to_string(), self.order_retired_numbers.iter().flat_map(|id| self.retired_numbers.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("states_provinces.dat".to_string(), self.order_states_provinces.iter().flat_map(|id| self.states_provinces.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("injuries.dat".to_string(), self.order_injuries.iter().flat_map(|id| self.injuries.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("currencies.dat".to_string(), self.order_currencies.iter().flat_map(|id| self.currencies.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("drafts.dat".to_string(), self.order_drafts.iter().flat_map(|id| self.drafts.get(id).unwrap().to_bytes()).collect());
-        encoded.insert("stage_names.dat".to_string(), self.order_stage_names.iter().flat_map(|id| self.stage_names.get(id).unwrap().to_bytes()).collect());
+        encoded.insert(
+            "continent.dat".to_string(),
+            self.order_continents
+                .iter()
+                .flat_map(|id| self.continents.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "officials.dat".to_string(),
+            self.order_officials
+                .iter()
+                .flat_map(|id| self.officials.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "first_names.dat".to_string(),
+            self.order_forenames
+                .iter()
+                .flat_map(|id| self.forenames.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "second_names.dat".to_string(),
+            self.order_surnames
+                .iter()
+                .flat_map(|id| self.surnames.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "city.dat".to_string(),
+            self.order_cities
+                .iter()
+                .flat_map(|id| self.cities.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "club.dat".to_string(),
+            self.order_clubs
+                .iter()
+                .flat_map(|id| self.clubs.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "nat_club.dat".to_string(),
+            self.order_nat_clubs
+                .iter()
+                .flat_map(|id| self.nat_clubs.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "staff_comp.dat".to_string(),
+            self.order_staff_awards
+                .iter()
+                .flat_map(|id| self.staff_awards.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "club_comp.dat".to_string(),
+            self.order_competitions
+                .iter()
+                .flat_map(|id| self.competitions.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "nation_comp.dat".to_string(),
+            self.order_nat_competitions
+                .iter()
+                .flat_map(|id| self.nat_competitions.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "club_comp_history.dat".to_string(),
+            self.order_comp_history
+                .iter()
+                .flat_map(|id| self.comp_history.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "nation_comp_history.dat".to_string(),
+            self.order_nat_comp_history
+                .iter()
+                .flat_map(|id| self.nat_comp_history.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "colour.dat".to_string(),
+            self.order_colours
+                .iter()
+                .flat_map(|id| self.colours.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "nation.dat".to_string(),
+            self.order_nations
+                .iter()
+                .flat_map(|id| self.nations.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "stadium.dat".to_string(),
+            self.order_arenas
+                .iter()
+                .flat_map(|id| self.arenas.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "staff.dat".to_string(),
+            self.order_staff
+                .iter()
+                .flat_map(|id| self.staff.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "nonplayer.dat".to_string(),
+            self.nonplayers
+                .iter()
+                .flat_map(|(_, a)| a._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "player.dat".to_string(),
+            self.order_players
+                .iter()
+                .flat_map(|id| self.players.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "staff_preferences.dat".to_string(),
+            self.order_staff_preferences
+                .iter()
+                .flat_map(|id| self.staff_preferences.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "retired_numbers.dat".to_string(),
+            self.order_retired_numbers
+                .iter()
+                .flat_map(|id| self.retired_numbers.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "states_provinces.dat".to_string(),
+            self.order_states_provinces
+                .iter()
+                .flat_map(|id| self.states_provinces.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "injuries.dat".to_string(),
+            self.order_injuries
+                .iter()
+                .flat_map(|id| self.injuries.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "currencies.dat".to_string(),
+            self.order_currencies
+                .iter()
+                .flat_map(|id| self.currencies.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "drafts.dat".to_string(),
+            self.order_drafts
+                .iter()
+                .flat_map(|id| self.drafts.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
+        encoded.insert(
+            "stage_names.dat".to_string(),
+            self.order_stage_names
+                .iter()
+                .flat_map(|id| self.stage_names.get(id).unwrap()._to_bytes())
+                .collect(),
+        );
 
         // Update the sizes of the save file parts and order them according to the file indexes.
         let mut order = Vec::new();
@@ -151,7 +306,7 @@ impl Data {
             // 'Steals' the contents of the vector.
             let bin = match encoded.get_mut(&name) {
                 Some(b) => b,
-                None => panic!("'{name}' is not a filename.")
+                None => panic!("'{name}' is not a filename."),
             };
 
             let bin = mem::take(bin);
@@ -176,8 +331,14 @@ impl Data {
         }
 
         // Put the save file together.
-        let mut bin = self.header.as_ref().unwrap().to_bytes();
-        bin.append(&mut self.file_indexes.iter().flat_map(|a| a.to_bytes()).collect());
+        let mut bin = self._header.as_ref().unwrap()._to_bytes();
+        bin.append(
+            &mut self
+                .file_indexes
+                .iter()
+                .flat_map(|a| a._to_bytes())
+                .collect(),
+        );
 
         // Pad the end of indexes and the start of content with NUL.
         bin.resize(start_position as usize, 0);
@@ -196,15 +357,15 @@ struct SIDate {
 }
 
 impl SIDate {
-    fn is_leap_year(&self) -> bool {
+    fn _is_leap_year(&self) -> bool {
         return self.b_is_leap_year != 0;
     }
 
-    fn is_default(&self) -> bool {
+    fn _is_default(&self) -> bool {
         return self.day == 31 && self.year == 1900;
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
+    fn _to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.day.to_le_bytes());
@@ -215,18 +376,18 @@ impl SIDate {
     }
 }
 
-// Convert an attribute if possible.
-pub fn convert_attribute(chart: &AttributeChart, current_ability: i16, attribute: i8) -> Option<i8> {
-    let ca_chart = match chart.get(&current_ability) {
-        Some(c) => c,
-        None => return None
-    };
+// Convert an attribute from save file to in-game.
+pub fn convert_attribute(
+    current_ability: i16,
+    attribute: i8,
+) -> i8 {
+    let ca_chart = ATTRIBUTE_CHART.get(&current_ability).unwrap();
 
     for (real_attr, range) in ca_chart {
         if range.contains(&attribute) {
-            return Some(*real_attr);
+            return *real_attr;
         }
     }
 
-    return None;
+    panic!("current ability '{current_ability}' does not have save-file attribute '{attribute}'");
 }

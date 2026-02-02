@@ -2,7 +2,7 @@ use std::io::Cursor;
 
 use binread::{BinRead, Error};
 
-use crate::data::{AttributeChart, Data, convert_attribute};
+use crate::data::{convert_attribute, Data};
 
 #[derive(BinRead, Clone)]
 #[br(little)]
@@ -10,11 +10,11 @@ pub struct Player {
     pub id: i32,
     pub current_ability: i16,
     pub potential_ability: i16,
-    home_reputation: i16,
-    current_reputation: i16,
-    world_reputation: i16,
-    squad_number: i8,
-    international_squad_number: i8,
+    _home_reputation: i16,
+    _current_reputation: i16,
+    _world_reputation: i16,
+    _squad_number: i8,
+    _international_squad_number: i8,
     pub acceleration: i8,
     pub aggression: i8,
     pub agility: i8,
@@ -41,10 +41,10 @@ pub struct Player {
     pub versatility: i8,
     pub vision_raw: i8,
     pub work_rate: i8,
-    handedness: i8,
-    height: u8,
-    weight: u8,
-    favourite_number: u8,
+    _handedness: i8,
+    _height: u8,
+    _weight: u8,
+    _favourite_number: u8,
     pub goaltender: i8,
     pub left_defence: i8,
     pub right_defence: i8,
@@ -69,9 +69,9 @@ pub struct Player {
     pub slapshot_raw: i8,
     pub stickhandling_raw: i8,
     pub wristshot_raw: i8,
-    morale: i8,
-    goalie_style: i8,
-    junior_preference: i8,
+    _morale: i8,
+    _goalie_style: i8,
+    _junior_preference: i8,
 }
 
 impl Player {
@@ -80,20 +80,20 @@ impl Player {
         data.order_players.push(player.id);
         data.players.insert(player.id, player);
 
-        return Ok(())
+        return Ok(());
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn _to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());
         bytes.extend_from_slice(&self.current_ability.to_le_bytes());
         bytes.extend_from_slice(&self.potential_ability.to_le_bytes());
-        bytes.extend_from_slice(&self.home_reputation.to_le_bytes());
-        bytes.extend_from_slice(&self.current_reputation.to_le_bytes());
-        bytes.extend_from_slice(&self.world_reputation.to_le_bytes());
-        bytes.extend_from_slice(&self.squad_number.to_le_bytes());
-        bytes.extend_from_slice(&self.international_squad_number.to_le_bytes());
+        bytes.extend_from_slice(&self._home_reputation.to_le_bytes());
+        bytes.extend_from_slice(&self._current_reputation.to_le_bytes());
+        bytes.extend_from_slice(&self._world_reputation.to_le_bytes());
+        bytes.extend_from_slice(&self._squad_number.to_le_bytes());
+        bytes.extend_from_slice(&self._international_squad_number.to_le_bytes());
         bytes.extend_from_slice(&self.acceleration.to_le_bytes());
         bytes.extend_from_slice(&self.aggression.to_le_bytes());
         bytes.extend_from_slice(&self.agility.to_le_bytes());
@@ -120,10 +120,10 @@ impl Player {
         bytes.extend_from_slice(&self.versatility.to_le_bytes());
         bytes.extend_from_slice(&self.vision_raw.to_le_bytes());
         bytes.extend_from_slice(&self.work_rate.to_le_bytes());
-        bytes.extend_from_slice(&self.handedness.to_le_bytes());
-        bytes.extend_from_slice(&self.height.to_le_bytes());
-        bytes.extend_from_slice(&self.weight.to_le_bytes());
-        bytes.extend_from_slice(&self.favourite_number.to_le_bytes());
+        bytes.extend_from_slice(&self._handedness.to_le_bytes());
+        bytes.extend_from_slice(&self._height.to_le_bytes());
+        bytes.extend_from_slice(&self._weight.to_le_bytes());
+        bytes.extend_from_slice(&self._favourite_number.to_le_bytes());
         bytes.extend_from_slice(&self.goaltender.to_le_bytes());
         bytes.extend_from_slice(&self.left_defence.to_le_bytes());
         bytes.extend_from_slice(&self.right_defence.to_le_bytes());
@@ -148,18 +148,18 @@ impl Player {
         bytes.extend_from_slice(&self.slapshot_raw.to_le_bytes());
         bytes.extend_from_slice(&self.stickhandling_raw.to_le_bytes());
         bytes.extend_from_slice(&self.wristshot_raw.to_le_bytes());
-        bytes.extend_from_slice(&self.morale.to_le_bytes());
-        bytes.extend_from_slice(&self.goalie_style.to_le_bytes());
-        bytes.extend_from_slice(&self.junior_preference.to_le_bytes());
+        bytes.extend_from_slice(&self._morale.to_le_bytes());
+        bytes.extend_from_slice(&self._goalie_style.to_le_bytes());
+        bytes.extend_from_slice(&self._junior_preference.to_le_bytes());
 
         return bytes;
     }
 
-    pub fn is_goalie(&self) -> bool {
+    pub fn _is_goalie(&self) -> bool {
         return self.goaltender == 20;
     }
 
-    pub fn convert_attribute(&self, chart: &AttributeChart, attr_name: &str) -> Option<i8> {
+    pub fn convert_attribute(&self, attr_name: &str) -> i8 {
         let attribute = match attr_name {
             "Anticipation" => self.anticipation_raw,
             "Balance" => self.balance_raw,
@@ -184,9 +184,9 @@ impl Player {
             "Slapshot" => self.slapshot_raw,
             "Stickhandling" => self.stickhandling_raw,
             "Wristshot" => self.wristshot_raw,
-            _ => panic!("{attr_name} is not an attribute")
+            _ => panic!("{attr_name} is not an attribute"),
         };
 
-        return convert_attribute(chart, self.current_ability, attribute);
+        return convert_attribute(self.current_ability, attribute);
     }
 }

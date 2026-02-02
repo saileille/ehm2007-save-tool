@@ -4,16 +4,134 @@ import { initialisePaging, PAGE, ROWS_PER_PAGE } from "./paging";
 type Player = [string | number];
 
 export let PLAYERS: Player[] = [];
+const HEADERS = [
+    "Random",
+    "Forename",
+    "Surname",
+    "Nation",
+    "Second Nation",
+    "Club Contracted",
+    "Club Playing",
+    "Birth Year",
+    "Adaptability",
+    "Ambition",
+    "Determination",
+    "Loyalty",
+    "Pressure",
+    "Professionalism",
+    "Sportsmanship",
+    "Temperament",
+    "Current Ability",
+    "Potential Ability",
+    "Acceleration",
+    "Aggression",
+    "Agility",
+    "Anticipation",
+    "Balance",
+    "Bravery",
+    "Consistency",
+    "Decisions",
+    "Dirtiness",
+    "Flair",
+    "Important Matches",
+    "Injury Proneness",
+    "Influence",
+    "Off The Puck",
+    "Natural Fitness",
+    "One On Ones",
+    "Speed",
+    "Passing",
+    "Positioning",
+    "Reflexes",
+    "Stamina",
+    "Strength",
+    "Teamwork",
+    "Versatility",
+    "Creativity",
+    "Work Rate",
+    "GK",
+    "LD",
+    "RD",
+    "LW",
+    "C",
+    "RW",
+    "Agitation",
+    "Blocker",
+    "Checking",
+    "Defensive Role",
+    "Deflections",
+    "Deking",
+    "Faceoffs",
+    "Fighting",
+    "Glove",
+    "Hitting",
+    "Offensive Role",
+    "Pass Tendency",
+    "Pokecheck",
+    "Rebound Control",
+    "Recovery",
+    "Slapshot",
+    "Stickhandling",
+    "Wristshot",
+];
 
 // Get the players from the database.
 const fetchPlayers = async () => {
     invoke("fetch_players").then((players) => {
         PLAYERS = players as Player[];
-        createSortingScripts();
         overwriteTable();
-
         initialisePaging();
     });
+};
+
+// Replace the save-loading start page with the player table.
+const createPlayerView = () => {
+    const main = document.getElementsByTagName("main")[0];
+    main.innerHTML = "";
+
+    const prevButton = document.createElement("button");
+    prevButton.textContent = "Previous Page";
+    prevButton.id = "prev-page";
+    prevButton.disabled = true;
+
+    const pageNumbers = document.createElement("span");
+    pageNumbers.id = "page-numbers";
+
+    const nextButton = document.createElement("button");
+    prevButton.textContent = "Next Page";
+    nextButton.id = "next-page";
+    nextButton.disabled = true;
+
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+
+    const tbody = document.createElement("tbody");
+    tbody.id = "players";
+
+    const tr = document.createElement("tr");
+    tr.id = "headers";
+
+    for (const header of HEADERS) {
+        const th = document.createElement("th");
+        th.textContent = header;
+        tr.appendChild(th);
+    }
+
+
+    thead.appendChild(tr);
+    table.append(thead, tbody);
+
+    main.append(prevButton, pageNumbers, nextButton, table);
+
+    createSortingScripts();
+};
+
+// Get the value as a displayable one.
+const getDisplayValue = (index: number, value: string | number): string => {
+    if (HEADERS[index] === "Random") {
+        return "";
+    }
+    return value.toString();
 };
 
 // Overwrite existing data in the player table without removing elements.
@@ -21,8 +139,6 @@ export const overwriteTable = () => {
     const tbody = document.getElementById("players") as HTMLTableSectionElement;
     let counter = 0;
     let i = PAGE * ROWS_PER_PAGE;
-
-    console.log(i);
 
     while (counter < ROWS_PER_PAGE) {
         const player = PLAYERS[i]
@@ -33,15 +149,15 @@ export const overwriteTable = () => {
             tr = tbody.children[counter] as HTMLTableRowElement;
             for (const [i2, value] of player.entries()) {
                 const td = tr.children[i2] as HTMLTableCellElement;
-                td.textContent = value.toString();
+                td.textContent = getDisplayValue(i2, value);
             }
         }
 
         // Create a new one if needed.
         else {
             tr = document.createElement("tr");
-            for (const value of player) {
-                tr.appendChild(createCell(value));
+            for (const [i2, value] of player.entries()) {
+                tr.appendChild(createCell(getDisplayValue(i2, value)));
             }
 
             tbody.appendChild(tr);
@@ -102,4 +218,19 @@ const createCell = (content: string | number): HTMLTableCellElement => {
     return td;
 };
 
-fetchPlayers();
+// Load a save.
+const loadSave = async () => {
+    invoke("load_save").then(() => {
+        createPlayerView();
+    });
+    await fetchPlayers();
+};
+
+// Add the onclick event for the Load Save button here.
+const enableLoadButton = () => {
+    const button = document.getElementsByTagName("button")[0];
+    button.onclick = loadSave;
+    button.disabled = false;
+};
+
+enableLoadButton();

@@ -2,22 +2,26 @@ use std::io::Cursor;
 
 use binread::{BinRead, Error};
 
-use crate::{data::{Data, STANDARD_TEXT_LENGTH}, init::bytes_to_string, to_bytes::chars_to_bytes};
+use crate::{
+    data::{Data, STANDARD_TEXT_LENGTH},
+    init::bytes_to_string,
+    to_bytes::_chars_to_bytes,
+};
 
 #[derive(BinRead, Clone)]
 #[br(little)]
 pub struct Colour {
     id: i32,
     #[br(count = STANDARD_TEXT_LENGTH)]
-    b_name: Vec<char>,
-    red: u8,
-    green: u8,
-    blue: u8,
+    _b_name: Vec<char>,
+    _red: u8,
+    _green: u8,
+    _blue: u8,
 }
 
 impl Colour {
-    fn name(&self) -> String {
-        return bytes_to_string(&self.b_name);
+    fn _name(&self) -> String {
+        return bytes_to_string(&self._b_name);
     }
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
@@ -25,17 +29,17 @@ impl Colour {
         data.order_colours.push(colour.id);
         data.colours.insert(colour.id, colour);
 
-        return Ok(())
+        return Ok(());
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn _to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         bytes.extend_from_slice(&self.id.to_le_bytes());
-        bytes.append(&mut chars_to_bytes(&self.b_name));
-        bytes.extend_from_slice(&self.red.to_le_bytes());
-        bytes.extend_from_slice(&self.green.to_le_bytes());
-        bytes.extend_from_slice(&self.blue.to_le_bytes());
+        bytes.append(&mut _chars_to_bytes(&self._b_name));
+        bytes.extend_from_slice(&self._red.to_le_bytes());
+        bytes.extend_from_slice(&self._green.to_le_bytes());
+        bytes.extend_from_slice(&self._blue.to_le_bytes());
 
         return bytes;
     }
