@@ -1,0 +1,7 @@
+#headers > th {
+    user-select: none;
+}
+
+#headers > th:hover {
+    cursor: pointer;
+}

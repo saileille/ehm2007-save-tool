@@ -3,9 +3,10 @@ use std::{collections::HashMap, io::Cursor};
 use binread::{BinRead, Error};
 use regex::Regex;
 use serde_json::json;
+use tauri::webview::cookie::time::util::is_leap_year;
 
 use crate::{
-    data::{city::City, club::Club, nation::Nation, player::Player, Data, SIDate},
+    data::{Data, SIDate, city::City, club::Club, nation::Nation, player::Player},
     research::db,
 };
 
@@ -33,7 +34,7 @@ pub struct Staff {
     _date_joined_club: SIDate,
     _contract_expires_club: SIDate,
     _first_pro_contract: SIDate,
-    pub _age: i16,
+    pub age: i16,
     _international_apps: u8,
     _international_goals: u8,
     _international_assists: u8,
@@ -90,7 +91,7 @@ impl Staff {
         bytes.append(&mut self._date_joined_club._to_bytes());
         bytes.append(&mut self._contract_expires_club._to_bytes());
         bytes.append(&mut self._first_pro_contract._to_bytes());
-        bytes.extend_from_slice(&self._age.to_le_bytes());
+        bytes.extend_from_slice(&self.age.to_le_bytes());
         bytes.extend_from_slice(&self._international_apps.to_le_bytes());
         bytes.extend_from_slice(&self._international_goals.to_le_bytes());
         bytes.extend_from_slice(&self._international_assists.to_le_bytes());
@@ -234,12 +235,12 @@ impl Staff {
         };
     }
 
-    fn birth_year(&self) -> i16 {
-        return self.date_of_birth.year;
-    }
-
     pub fn player_data(&self, data: &Data) -> Option<Player> {
         return data.players.get(&self.player_data_id).cloned();
+    }
+
+    fn full_name(&self, data: &Data) -> String {
+        format!("{}, {}", self.surname(data), self.forename(data))
     }
 
     // Check if the person's name has no special characters.
@@ -249,83 +250,110 @@ impl Staff {
     }
 
     // Create an array of player data.
-    pub fn create_player_view(&self, data: &Data, counter: usize) -> Option<serde_json::Value> {
+    pub fn create_player_view(&self, data: &Data, headers: &[String], counter: usize) -> Option<Vec<serde_json::Value>> {
         let p_option = self.player_data(data);
         if p_option.is_none() {
             return None;
         }
 
         let p = p_option.unwrap();
-        return Some(json!([
-            counter, // Used as random seed.
-            self.forename(data),
-            self.surname(data),
-            self.nation_name(data),
-            self.second_nation_name(data),
-            self.club_contracted_name(data),
-            self.club_playing_name(data),
-            self.birth_year(),
-            self.adaptability,
-            self.ambition,
-            self.determination,
-            self.loyalty,
-            self.pressure,
-            self.professionalism,
-            self.sportsmanship,
-            self.temperament,
-            p.current_ability,
-            p.potential_ability,
-            p.acceleration,
-            p.aggression,
-            p.agility,
-            p.convert_attribute("Anticipation"),
-            p.convert_attribute("Balance"),
-            p.bravery,
-            p.consistency,
-            p.convert_attribute("Decisions"),
-            p.dirtiness,
-            p.flair,
-            p.important_matches,
-            p.injury_proneness,
-            p.leadership,
-            p.convert_attribute("Off The Puck"),
-            p.natural_fitness,
-            p.convert_attribute("One On Ones"),
-            p.pace,
-            p.convert_attribute("Passing"),
-            p.convert_attribute("Positioning"),
-            p.convert_attribute("Reflexes"),
-            p.stamina,
-            p.strength,
-            p.teamwork,
-            p.versatility,
-            p.convert_attribute("Creativity"),
-            p.work_rate,
-            p.goaltender,
-            p.left_defence,
-            p.right_defence,
-            p.left_wing,
-            p.center,
-            p.right_wing,
-            p.agitation,
-            p.convert_attribute("Blocker"),
-            p.convert_attribute("Checking"),
-            p.defensive_role,
-            p.convert_attribute("Deflections"),
-            p.convert_attribute("Deking"),
-            p.convert_attribute("Faceoffs"),
-            p.convert_attribute("Fighting"),
-            p.convert_attribute("Glove"),
-            p.convert_attribute("Hitting"),
-            p.offensive_role,
-            p.pass_tendency,
-            p.convert_attribute("Pokecheck"),
-            p.convert_attribute("Rebound Control"),
-            p.convert_attribute("Recovery"),
-            p.convert_attribute("Slapshot"),
-            p.convert_attribute("Stickhandling"),
-            p.convert_attribute("Wristshot"),
-        ]));
+
+        let mut row = Vec::new();
+
+        for header in headers {
+            let header = header.as_str();
+            row.push(match header {
+                "Random" => json!(counter),
+                "Name" => json!(self.full_name(data)),
+                "Nation" => json!(self.nation_name(data)),
+                "Second Nation" => json!(self.second_nation_name(data)),
+                "Club Contracted" => json!(self.club_contracted_name(data)),
+                "Club Playing" => json!(self.club_playing_name(data)),
+                "Birthday" => json!(self.date_of_birth.to_days()),
+                "Adaptability" => json!(self.adaptability),
+                "Ambition" => json!(self.ambition),
+                "Determination" => json!(self.determination),
+                "Loyalty" => json!(self.loyalty),
+                "Pressure" => json!(self.pressure),
+                "Professionalism" => json!(self.professionalism),
+                "Sportsmanship" => json!(self.sportsmanship),
+                "Temperament" => json!(self.temperament),
+                "Current Ability" => json!(p.current_ability),
+                "Potential Ability" => json!(p.potential_ability),
+                "Acceleration" => json!(p.acceleration),
+                "Aggression" => json!(p.aggression),
+                "Agility" => json!(p.agility),
+                "Bravery" => json!(p.bravery),
+                "Consistency" => json!(p.consistency),
+                "Dirtiness" => json!(p.dirtiness),
+                "Flair" => json!(p.flair),
+                "Important Matches" => json!(p.important_matches),
+                "Injury Proneness" => json!(p.injury_proneness),
+                "Influence" => json!(p.leadership),
+                "Natural Fitness" => json!(p.natural_fitness),
+                "Speed" => json!(p.pace),
+                "Stamina" => json!(p.stamina),
+                "Strength" => json!(p.strength),
+                "Teamwork" => json!(p.teamwork),
+                "Versatility" => json!(p.versatility),
+                "Work Rate" => json!(p.work_rate),
+                "GK" => json!(p.goaltender),
+                "LD" => json!(p.left_defence),
+                "RD" => json!(p.right_defence),
+                "LW" => json!(p.left_wing),
+                "C" => json!(p.center),
+                "RW" => json!(p.right_wing),
+                "Agitation" => json!(p.agitation),
+                "Defensive Role" => json!(p.defensive_role),
+                "Offensive Role" => json!(p.offensive_role),
+                "Pass Tendency" => json!(p.pass_tendency),
+
+                attribute => json!(p.convert_attribute(attribute)),
+            });
+        }
+
+        return Some(row);
+    }
+
+    // Get the dates when the person has the current age.
+    // Note: Person's age changes only the day AFTER their birthday.
+    pub fn dates_with_this_age(&self) -> (SIDate, SIDate) {
+        let mut min_day = self.date_of_birth.day;
+        let min_year = self.age + self.date_of_birth.year;
+        let birth_year_is_leap = is_leap_year(self.date_of_birth.year as i32);
+        let min_year_is_leap = is_leap_year(min_year as i32);
+
+        // Align the min date as close to the birthday as possible.
+        if birth_year_is_leap && !min_year_is_leap && min_day >= SIDate::LEAP_DAY {
+            min_day -= 1;
+        }
+        else if !birth_year_is_leap && min_year_is_leap && min_day >= SIDate::LEAP_DAY {
+            min_day += 1;
+        }
+
+        let mut min = SIDate {
+            day: min_day,
+            year: min_year,
+            b_is_leap_year: 0,
+        };
+
+        // The min date is one day after the birthday.
+        min.add_days(1);
+
+        let mut max = min.clone();
+
+        let min_is_leap = is_leap_year(min.year as i32);
+        let max_is_leap = is_leap_year((min.year + 1) as i32);
+
+        if (min_is_leap && min.day <= SIDate::LEAP_DAY)
+        || (max_is_leap && min.day >= SIDate::LEAP_DAY) {
+            max.add_days(365);
+        }
+        else {
+            max.add_days(364);
+        }
+
+        return (min, max);
     }
 
     pub fn _merge_players(
@@ -347,7 +375,7 @@ impl Staff {
         return Some(db::_Player {
             forename: self.forename(db),
             surname: self.surname(db),
-            age: save_person._age,
+            age: save_person.age,
             birthplace: save_person._birthplace(save),
             nation: save_person._nation_three_letter_name(save),
             second_nation: save_person._second_nation_three_letter_name(save),

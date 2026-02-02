@@ -7,17 +7,14 @@ use std::{
 };
 
 use crate::{
-    data::Data,
-    init::{get_parser_guide, parse_file},
-    research::_AttributeData,
+    data::Data, globals::PARSER_GUIDE, init::parse_file, research::_AttributeData
 };
 
 pub fn _load_files(path_name: &str) -> Data {
     let folder = Path::new(path_name);
-    let parser_guide = get_parser_guide();
 
     let mut db_data = Data::default();
-    for (filename, parser) in parser_guide {
+    for (filename, parser) in PARSER_GUIDE.iter() {
         let mut path_buf = folder.to_path_buf();
         path_buf.push(filename.as_str());
 

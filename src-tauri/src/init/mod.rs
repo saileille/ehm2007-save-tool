@@ -2,7 +2,6 @@
 pub mod debug;
 
 use std::{
-    collections::HashMap,
     fs::{File, OpenOptions},
     io::{Cursor, Read as _, Write},
     path::Path,
@@ -11,19 +10,10 @@ use std::{
 use binread::{BinRead, Error};
 
 use crate::{
-    data::{
-        arena::Arena, city::City, club::Club, colour::Colour, competition::Competition,
-        competition_history::CompetitionHistory, continent::Continent, currency::Currency,
-        draft::Draft, injury::Injury, name::Name, nation::Nation, non_player::NonPlayer,
-        official::Official, player::Player, retired_number::RetiredNumber, staff::Staff,
-        staff_award::StaffAward, staff_preferences::StaffPreferences, stage_name::StageName,
-        state_province::StateProvince, Data,
-    },
-    init::debug::_check_players,
-    to_bytes::_chars_to_bytes,
+    data::
+        Data
+    , globals::{PARSER_GUIDE, ParseFunc}, init::debug::_check_players, to_bytes::_chars_to_bytes
 };
-
-type ParseFunc = fn(&mut Data, &mut Cursor<Vec<u8>>) -> Result<(), Error>;
 
 #[derive(BinRead, Clone)]
 #[br(little)]
@@ -153,6 +143,7 @@ pub fn load_save(mut file: File) -> Data {
     let mut data = Data::initialise(&mut cursor);
 
     parse_files(&mut cursor, &mut data);
+    data.calculate_ingame_date();
     return data;
 }
 
@@ -167,47 +158,8 @@ pub fn read_file_indexes(cursor: &mut Cursor<Vec<u8>>, header: &Header) -> Vec<F
     return file_indexes;
 }
 
-pub fn get_parser_guide() -> HashMap<String, ParseFunc> {
-    let mut functions: HashMap<String, ParseFunc> = HashMap::new();
-
-    functions.insert("continent.dat".to_string(), Continent::parse);
-    functions.insert("officials.dat".to_string(), Official::parse);
-    functions.insert("first_names.dat".to_string(), Name::parse_forename);
-    functions.insert("second_names.dat".to_string(), Name::parse_surname);
-    functions.insert("city.dat".to_string(), City::parse);
-    functions.insert("club.dat".to_string(), Club::parse);
-    functions.insert("nat_club.dat".to_string(), Club::parse_nat);
-    functions.insert("staff_comp.dat".to_string(), StaffAward::parse);
-    functions.insert("club_comp.dat".to_string(), Competition::parse);
-    functions.insert("nation_comp.dat".to_string(), Competition::parse_nat);
-    functions.insert(
-        "club_comp_history.dat".to_string(),
-        CompetitionHistory::parse,
-    );
-    functions.insert(
-        "nation_comp_history.dat".to_string(),
-        CompetitionHistory::parse_nat,
-    );
-    functions.insert("colour.dat".to_string(), Colour::parse);
-    functions.insert("nation.dat".to_string(), Nation::parse);
-    functions.insert("stadium.dat".to_string(), Arena::parse);
-    functions.insert("staff.dat".to_string(), Staff::parse);
-    functions.insert("nonplayer.dat".to_string(), NonPlayer::parse);
-    functions.insert("player.dat".to_string(), Player::parse);
-    functions.insert("staff_preferences.dat".to_string(), StaffPreferences::parse);
-    functions.insert("retired_numbers.dat".to_string(), RetiredNumber::parse);
-    functions.insert("states_provinces.dat".to_string(), StateProvince::parse);
-    functions.insert("injuries.dat".to_string(), Injury::parse);
-    functions.insert("currencies.dat".to_string(), Currency::parse);
-    functions.insert("drafts.dat".to_string(), Draft::parse);
-    functions.insert("stage_names.dat".to_string(), StageName::parse);
-
-    return functions;
-}
-
 // Parse the files.
 pub fn parse_files(global_cursor: &mut Cursor<Vec<u8>>, data: &mut Data) {
-    let parser_guide = get_parser_guide();
     let file_indexes = data.file_indexes.clone();
 
     // FileIndex::debug_csv(&file_indexes);
@@ -219,7 +171,7 @@ pub fn parse_files(global_cursor: &mut Cursor<Vec<u8>>, data: &mut Data) {
             Err(e) => panic!("{e} - file name: {name}"),
         };
 
-        match parser_guide.get(name.as_str()) {
+        match PARSER_GUIDE.get(name.as_str()) {
             Some(parser) => {
                 parse_file(&mut cursor, parser, data, index.size as u64, name.as_str());
             }

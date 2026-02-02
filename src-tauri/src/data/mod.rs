@@ -21,9 +21,10 @@ pub mod staff_preferences;
 pub mod stage_name;
 pub mod state_province;
 
-use std::{collections::HashMap, io::Cursor, mem};
+use std::{cmp::Ordering, collections::HashMap, io::Cursor, mem};
 
 use binread::BinRead;
+use tauri::webview::cookie::time::util::is_leap_year;
 
 use crate::{
     data::{
@@ -48,6 +49,8 @@ static SIX_LETTER_TEXT_LENGTH: u8 = 7;
 pub struct Data {
     pub _header: Option<Header>,
     pub file_indexes: Vec<FileIndex>,
+
+    pub date_range: [SIDate; 2],
 
     continents: HashMap<i32, Continent>,
     officials: HashMap<i32, Official>,
@@ -346,17 +349,87 @@ impl Data {
         bin.append(&mut content_bin);
         return bin;
     }
+
+    // Determine what the in-game date could be.
+    pub fn calculate_ingame_date(&mut self) {
+        self.date_range[0] = SIDate { day: 0, year: i16::MIN, b_is_leap_year: 0 };
+        self.date_range[1] = SIDate { day: 366, year: i16::MAX, b_is_leap_year: 0 };
+
+        for staff in self.staff.values() {
+            let (min_date, max_date) = staff.dates_with_this_age();
+            if min_date > self.date_range[0] {
+                self.date_range[0] = min_date;
+            }
+            if max_date < self.date_range[1] {
+                self.date_range[1] = max_date;
+            }
+
+            // The date has been determined when the dates are equal.
+            if self.date_range[0] == self.date_range[1] {
+                break;
+            }
+        }
+    }
 }
 
 #[derive(BinRead, PartialEq, Clone)]
 #[br(little)]
-struct SIDate {
+pub struct SIDate {
     day: i16,
     year: i16,
     b_is_leap_year: u8,
 }
 
+impl Default for SIDate {
+    fn default() -> Self {
+        Self {
+            day: 31,
+            year: 1900,
+            b_is_leap_year: 0,
+        }
+    }
+}
+
+impl PartialOrd for SIDate {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self.year < other.year {
+            return Some(Ordering::Less);
+        }
+        if self.year > other.year {
+            return Some(Ordering::Greater);
+        }
+        if self.day < other.day {
+            return Some(Ordering::Less);
+        }
+        if self.day > other.day {
+            return Some(Ordering::Greater);
+        }
+        return Some(Ordering::Equal);
+    }
+
+    fn lt(&self, other: &Self) -> bool {
+        return self.partial_cmp(other).unwrap() == Ordering::Less;
+    }
+
+    fn le(&self, other: &Self) -> bool {
+        let result = self.partial_cmp(other).unwrap();
+        return result == Ordering::Less || result == Ordering::Equal;
+    }
+
+    fn gt(&self, other: &Self) -> bool {
+        return self.partial_cmp(other).unwrap() == Ordering::Greater;
+    }
+
+    fn ge(&self, other: &Self) -> bool {
+        let result = self.partial_cmp(other).unwrap();
+        return result == Ordering::Greater || result == Ordering::Equal;
+    }
+}
+
 impl SIDate {
+    // The day of Feb 29.
+    const LEAP_DAY: i16 = 59;
+
     fn _is_leap_year(&self) -> bool {
         return self.b_is_leap_year != 0;
     }
@@ -374,13 +447,70 @@ impl SIDate {
 
         return bytes;
     }
+
+    // Get days from the default.
+    pub fn to_days(&self) -> usize {
+        return self.days_between(Self::default());
+    }
+
+    // Get days between this date and another. This date must be more recent.
+    fn days_between(&self, other: Self) -> usize {
+        // Add days from the earlier date's year.
+        let mut days = match is_leap_year(other.year as i32) {
+            true => 366 - other.day,
+            false => 365 - other.day
+        } as usize;
+
+        // Add days from full years between the two dates.
+        for complete_year in other.year + 1 .. self.year {
+            days += match is_leap_year(complete_year as i32) {
+                true => 366,
+                false => 365
+            };
+        }
+
+        // Add days from this date's year.
+        days += self.day as usize;
+        return days;
+    }
+
+    // Add this many days to the date. Negative values subtract.
+    fn add_days(&mut self, mut days: isize) {
+        // Starting from the 1st of January because it is easier.
+        days += self.day as isize;
+        let add = days >= 0;
+
+        loop {
+            // Determine the year we are looking at - future or past.
+            let year = if add { self.year } else { self.year - 1 };
+            let year_days = if is_leap_year(year as i32) { 366 } else { 365 };
+
+            if days >= year_days {
+                self.year += 1;
+                days -= year_days;
+            }
+            else if days <= year_days * -1 {
+                self.year -= 1;
+                days += year_days;
+            }
+            else {
+                break;
+            }
+        }
+
+        if days < 0 {
+            self.year -= 1;
+            let year_days = if is_leap_year(self.year as i32) { 366 } else { 365 };
+            self.day = (year_days + days) as i16;
+        }
+        else {
+            self.day = days as i16;
+        }
+    }
 }
 
 // Convert an attribute from save file to in-game.
-pub fn convert_attribute(
-    current_ability: i16,
-    attribute: i8,
-) -> i8 {
+pub fn convert_attribute(current_ability: i16, attribute: i8) -> i8 {
     let ca_chart = ATTRIBUTE_CHART.get(&current_ability).unwrap();
 
     for (real_attr, range) in ca_chart {

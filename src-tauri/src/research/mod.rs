@@ -10,8 +10,7 @@ use std::{
 };
 
 use crate::{
-    data::{staff::Staff, Data},
-    init::{get_parser_guide, load_save, parse_file},
+    data::{Data, staff::Staff}, globals::PARSER_GUIDE, init::{load_save, parse_file}
 };
 
 type _AttributeData = HashMap<i16, HashMap<i8, HashMap<i8, usize>>>;
@@ -61,10 +60,8 @@ fn _load_player_data(folder: &mut PathBuf) -> _AttributeData {
 }
 
 fn _load_database(folder: &mut PathBuf) -> Data {
-    let parser_guide = get_parser_guide();
-
     let mut db_data = Data::default();
-    for (filename, parser) in parser_guide {
+    for (filename, parser) in PARSER_GUIDE.iter() {
         folder.push(filename.as_str());
 
         let mut file = match File::open(folder.to_str().unwrap()) {

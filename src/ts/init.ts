@@ -1,18 +1,18 @@
 import { invoke } from "@tauri-apps/api/core";
 import { initialisePaging, PAGE, ROWS_PER_PAGE } from "./paging";
+import { daysToDateString, getInGameDateText } from "./date";
 
 type Player = [string | number];
 
 export let PLAYERS: Player[] = [];
 const HEADERS = [
+    "Name",
     "Random",
-    "Forename",
-    "Surname",
     "Nation",
     "Second Nation",
     "Club Contracted",
     "Club Playing",
-    "Birth Year",
+    "Birthday",
     "Adaptability",
     "Ambition",
     "Determination",
@@ -77,7 +77,7 @@ const HEADERS = [
 
 // Get the players from the database.
 const fetchPlayers = async () => {
-    invoke("fetch_players").then((players) => {
+    invoke("fetch_players", {"headers": HEADERS }).then((players) => {
         PLAYERS = players as Player[];
         overwriteTable();
         initialisePaging();
@@ -85,9 +85,18 @@ const fetchPlayers = async () => {
 };
 
 // Replace the save-loading start page with the player table.
-const createPlayerView = () => {
+const createPlayerView = async () => {
+    const inGameDate = document.createElement("span");
+    inGameDate.textContent = await getInGameDateText();
+
     const main = document.getElementsByTagName("main")[0];
     main.innerHTML = "";
+
+    const filterCanvas = document.createElement("div");
+    filterCanvas.id = "filter-canvas";
+
+    const filterMenu = document.createElement("div");
+    filterMenu.id = "filter-menu";
 
     const prevButton = document.createElement("button");
     prevButton.textContent = "Previous Page";
@@ -98,7 +107,7 @@ const createPlayerView = () => {
     pageNumbers.id = "page-numbers";
 
     const nextButton = document.createElement("button");
-    prevButton.textContent = "Next Page";
+    nextButton.textContent = "Next Page";
     nextButton.id = "next-page";
     nextButton.disabled = true;
 
@@ -114,23 +123,25 @@ const createPlayerView = () => {
     for (const header of HEADERS) {
         const th = document.createElement("th");
         th.textContent = header;
+
         tr.appendChild(th);
     }
-
 
     thead.appendChild(tr);
     table.append(thead, tbody);
 
-    main.append(prevButton, pageNumbers, nextButton, table);
-
+    main.append(filterMenu, filterCanvas, inGameDate, prevButton, pageNumbers, nextButton, table);
     createSortingScripts();
 };
 
 // Get the value as a displayable one.
 const getDisplayValue = (index: number, value: string | number): string => {
-    if (HEADERS[index] === "Random") {
-        return "";
+    const headerName = HEADERS[index];
+
+    if (headerName === "Birthday") {
+        return daysToDateString(value as number);
     }
+
     return value.toString();
 };
 
@@ -215,14 +226,14 @@ const sortTable = (n: number) => {
 const createCell = (content: string | number): HTMLTableCellElement => {
     const td = document.createElement("td");
     td.textContent = content.toString();
+
     return td;
 };
 
 // Load a save.
 const loadSave = async () => {
-    invoke("load_save").then(() => {
-        createPlayerView();
-    });
+    await invoke("load_save");
+    await createPlayerView();
     await fetchPlayers();
 };
 

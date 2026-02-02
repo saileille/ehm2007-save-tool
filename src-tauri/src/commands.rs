@@ -5,21 +5,31 @@ use crate::{data::Data, init::load_bin};
 
 #[tauri::command]
 // Get the players in the save.
-pub fn fetch_players(handle: AppHandle) -> Vec<serde_json::Value> {
+pub fn fetch_players(handle: AppHandle, headers: Vec<String>) -> Vec<Vec<serde_json::Value>> {
     let data = handle.state::<Data>();
 
     let mut counter = 0;
-    let players: Vec<serde_json::Value> = data
+    let players: Vec<Vec<serde_json::Value>> = data
         .staff
         .iter()
         .filter_map(|(_, player)| {
-            let view = player.create_player_view(&data, counter);
+            let row = player.create_player_view(&data, &headers, counter);
             counter += 1;
-            return view;
+            return row;
         })
         .collect();
 
     return players;
+}
+
+#[tauri::command]
+// Get the possible ingame dates.
+pub fn get_ingame_date(handle: AppHandle) -> [usize; 2] {
+    let date_range = &handle.state::<Data>().date_range;
+    return [
+        date_range[0].to_days(),
+        date_range[1].to_days(),
+    ];
 }
 
 #[tauri::command]
