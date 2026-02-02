@@ -49,3 +49,13 @@ pub fn load_save(handle: AppHandle) {
     let data = load_bin(filepath.as_path().unwrap());
     handle.manage(data);
 }
+
+#[tauri::command]
+// Get data needed to build the filters.
+pub fn get_filter_data(handle: AppHandle) -> Vec<(i32, String)> {
+    let data = handle.state::<Data>();
+    let mut nations: Vec<(i32, String)> = data.nations.iter().map(|(id, nation)| (*id, nation.name())).collect();
+
+    nations.sort_by(|a, b| a.1.cmp(&b.1));
+    return nations;
+}

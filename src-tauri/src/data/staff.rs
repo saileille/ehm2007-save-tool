@@ -28,7 +28,7 @@ pub struct Staff {
     _birth_town_id: i32,
     forename_id: i32,
     surname_id: i32,
-    date_of_birth: SIDate,
+    pub date_of_birth: SIDate,
     _date_joined_nation: SIDate,
     _contract_expires_nation: SIDate,
     _date_joined_club: SIDate,
@@ -239,7 +239,7 @@ impl Staff {
         return data.players.get(&self.player_data_id).cloned();
     }
 
-    fn full_name(&self, data: &Data) -> String {
+    pub fn full_name(&self, data: &Data) -> String {
         format!("{}, {}", self.surname(data), self.forename(data))
     }
 

@@ -65,7 +65,7 @@ pub struct Data {
     comp_history: HashMap<i32, CompetitionHistory>,
     nat_comp_history: HashMap<i32, CompetitionHistory>,
     colours: HashMap<i32, Colour>,
-    nations: HashMap<i32, Nation>,
+    pub nations: HashMap<i32, Nation>,
     arenas: HashMap<i32, Arena>,
     pub staff: HashMap<i32, Staff>,
     nonplayers: Vec<(i32, NonPlayer)>, // Multiple IDs can exist?
@@ -356,9 +356,16 @@ impl Data {
         self.date_range[1] = SIDate { day: 366, year: i16::MAX, b_is_leap_year: 0 };
 
         for staff in self.staff.values() {
+            // Ignore people born in leap years because game shows their ages incorrectly.
+            // Maybe should use leap years if the current year is also a leap year?
+            if is_leap_year(staff.date_of_birth.year as i32) {
+                continue;
+            }
+
             let (min_date, max_date) = staff.dates_with_this_age();
             if min_date > self.date_range[0] {
                 self.date_range[0] = min_date;
+
             }
             if max_date < self.date_range[1] {
                 self.date_range[1] = max_date;

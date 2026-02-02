@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { initialisePaging, PAGE, ROWS_PER_PAGE } from "./paging";
 import { daysToDateString, getInGameDateText } from "./date";
+import { createFilterLayer } from "./filter";
 
 type Player = [string | number];
 
@@ -77,7 +78,7 @@ const HEADERS = [
 
 // Get the players from the database.
 const fetchPlayers = async () => {
-    invoke("fetch_players", {"headers": HEADERS }).then((players) => {
+    invoke("fetch_players", { "headers": HEADERS }).then((players) => {
         PLAYERS = players as Player[];
         overwriteTable();
         initialisePaging();
@@ -92,11 +93,8 @@ const createPlayerView = async () => {
     const main = document.getElementsByTagName("main")[0];
     main.innerHTML = "";
 
-    const filterCanvas = document.createElement("div");
-    filterCanvas.id = "filter-canvas";
-
-    const filterMenu = document.createElement("div");
-    filterMenu.id = "filter-menu";
+    const filtersButton = document.createElement("button");
+    filtersButton.textContent = "Filters";
 
     const prevButton = document.createElement("button");
     prevButton.textContent = "Previous Page";
@@ -130,7 +128,9 @@ const createPlayerView = async () => {
     thead.appendChild(tr);
     table.append(thead, tbody);
 
-    main.append(filterMenu, filterCanvas, inGameDate, prevButton, pageNumbers, nextButton, table);
+    main.append(inGameDate, filtersButton, prevButton, pageNumbers, nextButton, table);
+    await createFilterLayer(main, filtersButton);
+
     createSortingScripts();
 };
 
