@@ -1,7 +1,7 @@
 use tauri::{AppHandle, Manager as _};
 use tauri_plugin_dialog::DialogExt as _;
 
-use crate::{data::Data, init::load_bin};
+use crate::{data::Data, init::load_bin, views};
 
 #[tauri::command]
 // Get the players in the save.
@@ -13,11 +13,11 @@ pub fn fetch_players(
         country_choice_check: bool,
         earliest_birth_year: i16,
         exclude_nhl: bool,
-        exclude_na: bool) -> Vec<Vec<serde_json::Value>> {
+        exclude_na: bool) -> Vec<views::player::Player> {
     let data = handle.state::<Data>();
 
     let mut counter = 0;
-    let players: Vec<Vec<serde_json::Value>> = data.staff.iter()
+    let players: Vec<views::player::Player> = data.staff.iter()
         .filter_map(|(_, person)| {
             let player = person.player_data(&data);
             if player.is_none() {

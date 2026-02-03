@@ -1,11 +1,9 @@
-use std::io::Cursor;
+use std::{io::Cursor, str::Utf8Error};
 
 use binread::{BinRead, Error};
 
 use crate::{
-    data::{nation::Nation, state_province::StateProvince, Data, STANDARD_TEXT_LENGTH},
-    init::bytes_to_string,
-    to_bytes::_chars_to_bytes,
+    chars::bytes_to_string, data::{Data, STANDARD_TEXT_LENGTH, nation::Nation, state_province::StateProvince}
 };
 
 #[derive(BinRead, Clone)]
@@ -17,13 +15,13 @@ pub struct City {
     _state_id: i32,
     _nation_id: i32,
     #[br(count = STANDARD_TEXT_LENGTH)]
-    _b_name: Vec<char>,
+    pub _b_name: Vec<u8>,
     _gender_name: i8,
     _attraction: i8,
 }
 
 impl City {
-    pub fn _name(&self) -> String {
+    pub fn _name(&self) -> Result<String, Utf8Error> {
         return bytes_to_string(&self._b_name);
     }
 
@@ -65,7 +63,7 @@ impl City {
         bytes.extend_from_slice(&self.id.to_le_bytes());
         bytes.extend_from_slice(&self._state_id.to_le_bytes());
         bytes.extend_from_slice(&self._nation_id.to_le_bytes());
-        bytes.append(&mut _chars_to_bytes(&self._b_name));
+        bytes.append(&mut self._b_name.clone());
         bytes.extend_from_slice(&self._gender_name.to_le_bytes());
         bytes.extend_from_slice(&self._attraction.to_le_bytes());
 

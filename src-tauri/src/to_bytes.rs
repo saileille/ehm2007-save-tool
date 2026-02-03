@@ -87,7 +87,3 @@ where
         .flat_map(|&item| item.to_le_bytes().as_ref().to_vec())
         .collect()
 }
-
-pub fn _chars_to_bytes(chars: &[char]) -> Vec<u8> {
-    chars.iter().map(|&char| char as u8).collect()
-}

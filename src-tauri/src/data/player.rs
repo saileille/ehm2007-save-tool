@@ -1,4 +1,4 @@
-use std::io::Cursor;
+use std::{collections::HashMap, io::Cursor};
 use lazy_static::lazy_static;
 use binread::{BinRead, Error};
 
@@ -142,29 +142,48 @@ impl Player {
         return Ok(());
     }
 
-    pub fn position_string(&self) -> String {
+    // Get the positions of the player as a vector.
+    pub fn position_vec(&self) -> Vec<u8> {
         let mut positions = Vec::from([
-            ("G", self.goaltender),
-            ("LD", self.left_defence),
-            ("RD", self.right_defence),
-            ("LW", self.left_wing),
-            ("C", self.center),
-            ("RW", self.right_wing),
+            (0, self.goaltender),
+            (1, self.left_defence),
+            (2, self.right_defence),
+            (3, self.left_wing),
+            (4, self.center),
+            (5, self.right_wing),
         ]);
 
         positions.sort_by(|a, b| b.1.cmp(&a.1));
 
-        let position_string: Vec<String> = positions.into_iter()
+        return positions.into_iter()
             .filter_map(|(pos, score)| {
                 if score < 16 {
                     return None;
                 }
                 else {
-                    return Some(pos.to_string());
+                    return Some(pos);
                 }
             })
             .collect();
-        return position_string.join("/");
+    }
+
+    pub fn position_string(&self) -> String {
+        let positions = HashMap::from([
+            (0, "G"),
+            (1, "LD"),
+            (2, "RD"),
+            (3, "LW"),
+            (4, "C"),
+            (5, "RW"),
+        ]);
+
+        let player_positions = self.position_vec();
+
+        let string: Vec<&str> = player_positions.into_iter()
+            .map(|pos| *positions.get(&pos).unwrap())
+            .collect();
+
+        return string.join("/");
     }
 
     pub fn _to_bytes(&self) -> Vec<u8> {

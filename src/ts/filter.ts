@@ -102,7 +102,7 @@ const createBirthYearFilter = (filterMenu: HTMLDivElement) => {
 const createNHLExclusion = (filterMenu: HTMLDivElement) => {
     const label = document.createElement("label");
     label.htmlFor = "exclude-nhl";
-    label.textContent = "Ignore NHL Players";
+    label.textContent = "Exclude NHL Players";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -115,7 +115,7 @@ const createNHLExclusion = (filterMenu: HTMLDivElement) => {
 const createNorthAmericaExclusion = (filterMenu: HTMLDivElement) => {
     const label = document.createElement("label");
     label.htmlFor = "exclude-na";
-    label.textContent = "Ignore Players in North America";
+    label.textContent = "Exclude Players in North America";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";

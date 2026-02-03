@@ -1,11 +1,9 @@
-use std::io::Cursor;
+use std::{io::Cursor, str::Utf8Error};
 
 use binread::{BinRead, Error};
 
 use crate::{
-    data::{Data, REAL_SHORT_TEXT_LENGTH, SHORT_TEXT_LENGTH, STANDARD_TEXT_LENGTH},
-    init::bytes_to_string,
-    to_bytes::{_chars_to_bytes, _slice_to_bytes},
+    chars::bytes_to_string, data::{Data, REAL_SHORT_TEXT_LENGTH, SHORT_TEXT_LENGTH, STANDARD_TEXT_LENGTH}, to_bytes::_slice_to_bytes
 };
 
 #[derive(BinRead, Clone)]
@@ -62,11 +60,11 @@ pub struct Club {
     _reputation: i16,
     _year_founded: i16,
     #[br(count = STANDARD_TEXT_LENGTH)]
-    b_name: Vec<char>,
-    _b_short_name: [char; SHORT_TEXT_LENGTH as usize],
-    _b_abbreviation: [char; REAL_SHORT_TEXT_LENGTH as usize],
+    pub b_name: Vec<u8>,
+    _b_short_name: [u8; SHORT_TEXT_LENGTH as usize],
+    _b_abbreviation: [u8; REAL_SHORT_TEXT_LENGTH as usize],
     #[br(count = STANDARD_TEXT_LENGTH)]
-    _b_nickname: Vec<char>,
+    _b_nickname: Vec<u8>,
     _gender_name_short: i8,
     _last_position: i8,
     _professional_status: i8,
@@ -81,20 +79,20 @@ pub struct Club {
 }
 
 impl Club {
-    pub fn name(&self) -> String {
+    pub fn name(&self) -> Result<String, Utf8Error> {
         return bytes_to_string(&self.b_name);
     }
 
     pub fn _short_name(&self) -> String {
-        return bytes_to_string(&self._b_short_name);
+        return bytes_to_string(&self._b_short_name).unwrap();
     }
 
     fn _abbreviation(&self) -> String {
-        return bytes_to_string(&self._b_abbreviation);
+        return bytes_to_string(&self._b_abbreviation).unwrap();
     }
 
     fn _nickname(&self) -> String {
-        return bytes_to_string(&self._b_nickname);
+        return bytes_to_string(&self._b_nickname).unwrap();
     }
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
@@ -165,10 +163,10 @@ impl Club {
         bytes.extend_from_slice(&self._assistant_captain2_id.to_le_bytes());
         bytes.extend_from_slice(&self._reputation.to_le_bytes());
         bytes.extend_from_slice(&self._year_founded.to_le_bytes());
-        bytes.append(&mut _chars_to_bytes(&self.b_name));
-        bytes.append(&mut _chars_to_bytes(&self._b_short_name));
-        bytes.append(&mut _chars_to_bytes(&self._b_abbreviation));
-        bytes.append(&mut _chars_to_bytes(&self._b_nickname));
+        bytes.append(&mut self.b_name.clone());
+        bytes.append(&mut self._b_short_name.to_vec());
+        bytes.append(&mut self._b_abbreviation.to_vec());
+        bytes.append(&mut self._b_nickname.clone());
         bytes.extend_from_slice(&self._gender_name_short.to_le_bytes());
         bytes.extend_from_slice(&self._last_position.to_le_bytes());
         bytes.extend_from_slice(&self._professional_status.to_le_bytes());

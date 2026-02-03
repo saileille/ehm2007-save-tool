@@ -3,11 +3,17 @@ import { initialisePaging, PAGE, ROWS_PER_PAGE } from "./paging";
 import { daysToDateString, getInGameDateText } from "./date";
 import { createFilterLayer } from "./filter";
 
-type Player = [string | number];
+type Player = {
+    forename: string,
+    surname: string,
+    positions: number[],
+    columns: [string | number],
+};
 
 export let PLAYERS: Player[] = [];
 const HEADERS = [
     "Name",
+    "Staff ID",
     "Random",
     "Nation",
     "Second Nation",
@@ -193,7 +199,7 @@ export const overwriteTable = () => {
         // Use an existing row if one exists.
         if (tbody.children.length > counter) {
             tr = tbody.children[counter] as HTMLTableRowElement;
-            for (const [i2, value] of player.entries()) {
+            for (const [i2, value] of player.columns.entries()) {
                 const td = tr.children[i2] as HTMLTableCellElement;
                 td.textContent = getDisplayValue(i2, value);
             }
@@ -202,7 +208,7 @@ export const overwriteTable = () => {
         // Create a new one if needed.
         else {
             tr = document.createElement("tr");
-            for (const [i2, value] of player.entries()) {
+            for (const [i2, value] of player.columns.entries()) {
                 tr.appendChild(createCell(getDisplayValue(i2, value)));
             }
 
@@ -235,18 +241,18 @@ const sortTable = (n: number) => {
     let sortAscending = 1;
     const before = JSON.stringify(PLAYERS);
 
+    const columnName = (document.getElementById("headers") as HTMLTableRowElement).children[n].textContent;
+
     do {
-        PLAYERS.sort((a, b) => {
-            if (a[n] < b[n]) {
-                return -1 * sortAscending;
-            }
-            else if (b[n] < a[n]) {
-                return 1 * sortAscending;
-            }
-            else {
-                return 0;
-            }
-        });
+        if (columnName === "Name") {
+            sortName(sortAscending);
+        }
+        else if (columnName === "Position") {
+            sortPosition(sortAscending);
+        }
+        else {
+            sortGeneric(sortAscending, n);
+        }
 
         // Check if anything changed.
         if (before !== JSON.stringify(PLAYERS)) {
@@ -256,11 +262,79 @@ const sortTable = (n: number) => {
 
         sortAscending *= -1;
     } while (sortAscending !== 1);
+};
+
+// Sort by the player name.
+const sortName = (sortAscending: number) => {
+    PLAYERS.sort((a, b) => {
+        if (a.surname < b.surname) {
+            return -1 * sortAscending;
+        }
+
+        if (b.surname < a.surname) {
+            return 1 * sortAscending;
+        }
+
+        if (a.forename < b.forename) {
+            return -1 * sortAscending;
+        }
+
+        if (b.forename < a.forename) {
+            return 1 * sortAscending;
+        }
+
+        return 0;
+    });
+};
+
+// Sort by the player position.
+const sortPosition = (sortAscending: number) => {
+    PLAYERS.sort((a, b) => {
+        for (let i = 0; i < 6; i++) {
+            const a_pos = a.positions[i];
+            const b_pos = b.positions[i];
+
+            if (a_pos === undefined && b_pos === undefined) {
+                break;
+            }
+
+            if (a_pos === b_pos) {
+                continue;
+            }
+
+            if (a_pos === undefined && b_pos !== undefined) {
+                return -1 * sortAscending;
+            }
+
+            if (b_pos === undefined && a_pos !== undefined) {
+                return 1 * sortAscending;
+            }
+
+            return (a_pos - b_pos) * sortAscending;
+        }
+
+        return 0;
+    });
+};
+
+// The generic sorting.
+const sortGeneric = (sortAscending: number, n: number) => {
+    PLAYERS.sort((a, b) => {
+        if (a.columns[n] < b.columns[n]) {
+            return -1 * sortAscending;
+        }
+
+        if (b.columns[n] < a.columns[n]) {
+            return 1 * sortAscending;
+        }
+
+        return 0;
+    });
 }
 
-const createCell = (content: string | number): HTMLTableCellElement => {
+const createCell = (content: string): HTMLTableCellElement => {
     const td = document.createElement("td");
-    td.textContent = content.toString();
+    td.textContent = content;
 
     return td;
 };

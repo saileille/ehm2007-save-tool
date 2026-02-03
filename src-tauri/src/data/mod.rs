@@ -21,13 +21,13 @@ pub mod staff_preferences;
 pub mod stage_name;
 pub mod state_province;
 
-use std::{cmp::Ordering, collections::HashMap, io::Cursor, mem};
+use std::{cmp::Ordering, collections::HashMap, fs::File, io::{Cursor, Write as _}, mem};
 
 use binread::BinRead;
 use tauri::webview::cookie::time::util::is_leap_year;
 
 use crate::{
-    data::{
+    chars::_bytes_to_string_debug, data::{
         arena::Arena, city::City, club::Club, colour::Colour, competition::Competition,
         competition_history::CompetitionHistory, continent::Continent, currency::Currency,
         draft::Draft, injury::Injury, name::Name, nation::Nation, non_player::NonPlayer,
@@ -47,7 +47,7 @@ static SIX_LETTER_TEXT_LENGTH: u8 = 7;
 // Everything.
 #[derive(Default, Clone)]
 pub struct Data {
-    pub header: Option<Header>,
+    pub _header: Option<Header>,
     pub file_indexes: Vec<FileIndex>,
 
     pub date_range: [SIDate; 2],
@@ -115,18 +115,21 @@ pub struct Data {
 impl Data {
     pub fn initialise(cursor: &mut Cursor<Vec<u8>>) -> Self {
         let header = Header::read(cursor).unwrap();
+
         let file_indexes = read_file_indexes(cursor, &header);
-        Self {
-            header: Some(header),
+        let data = Self {
+            _header: Some(header),
             file_indexes,
 
             ..Default::default()
-        }
+        };
+
+        return data;
     }
 
     // Replace the contents of this data with another.
-    pub fn update(&mut self, other: Data) {
-        self.header = other.header;
+    pub fn _update(&mut self, other: Data) {
+        self._header = other._header;
         self.file_indexes = other.file_indexes;
         self.date_range = other.date_range;
         self.continents = other.continents;
@@ -396,7 +399,7 @@ impl Data {
         }
 
         // Put the save file together.
-        let mut bin = self.header.as_ref().unwrap()._to_bytes();
+        let mut bin = self._header.as_ref().unwrap()._to_bytes();
         bin.append(
             &mut self
                 .file_indexes
@@ -461,13 +464,74 @@ impl Data {
         }
     }
 
+    // Create a CSV for character replacement.
+    pub fn _create_character_csv(&self) {
+        let mut staff_ids: Vec<i32> = self.staff.keys().into_iter().map(|id| *id).collect();
+        staff_ids.sort();
+
+        let mut string = Vec::new();
+        for id in staff_ids {
+            let person = self.staff.get(&id).unwrap();
+            let forename = person._forename_object(self);
+            let surname = person._surname_object(self);
+
+            let forename_error = forename.name();
+            let surname_error = surname.name();
+
+            let forename_string = match &forename_error {
+                Ok(s) => s.clone(),
+                Err(_) => _bytes_to_string_debug(&forename.b_name),
+            };
+
+            let surname_string = match &surname_error {
+                Ok(s) => s.clone(),
+                Err(_) => _bytes_to_string_debug(&surname.b_name)
+            };
+
+            match forename_error {
+                Ok(_) => (),
+                Err(e) => println!(
+                    "{e}\nbytes: {:?}\nstring: {}\nname: {} {}\nbirthyear: {}\nbirthplace: {}\nnationality: {}\nclub: {}",
+                    forename.b_name,
+                    forename_string,
+                    forename_string,
+                    surname_string,
+                    person.date_of_birth.year,
+                    person._birthplace(self),
+                    person.nation_name(self),
+                    person.club_contracted_name(self).unwrap(),
+                )
+            }
+
+            match surname_error {
+                Ok(_) => (),
+                Err(e) => println!(
+                    "{e}\nbytes: {:?}\nstring: {}\nname: {} {}\nbirthyear: {}\nbirthplace: {}\nnationality: {}\nclub: {}",
+                    surname.b_name,
+                    surname_string,
+                    forename_string,
+                    surname_string,
+                    person.date_of_birth.year,
+                    person._birthplace(self),
+                    person.nation_name(self),
+                    person.club_contracted_name(self).unwrap(),
+                )
+            }
+
+            string.push(format!("{id}\t{}\t{}\t{:?}\t{:?}", forename_string, surname_string, forename.b_name, surname.b_name));
+        }
+
+        let mut file = File::create(r"D:\Programs\NHL Eastside Hockey Manager 2007\tools\Own Projects\character conversion\data.csv").unwrap();
+        file.write_all(string.join("\n").as_bytes()).unwrap();
+    }
+
 }
 
 #[derive(BinRead, PartialEq, Clone)]
 #[br(little)]
 pub struct SIDate {
     day: i16,
-    year: i16,
+    pub year: i16,
     b_is_leap_year: u8,
 }
 

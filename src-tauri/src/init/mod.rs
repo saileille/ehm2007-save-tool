@@ -2,7 +2,7 @@
 pub mod debug;
 
 use std::{
-    fs::{File, OpenOptions},
+    fs::File,
     io::{Cursor, Read as _, Write},
     path::Path,
 };
@@ -10,12 +10,11 @@ use std::{
 use binread::{BinRead, Error};
 
 use crate::{
-    data::
-        Data
-    , globals::{PARSER_GUIDE, ParseFunc}, init::debug::_check_players, to_bytes::_chars_to_bytes
+    chars::bytes_to_string, data::
+        Data, globals::{PARSER_GUIDE, ParseFunc}, init::debug::_check_players
 };
 
-#[derive(BinRead, Clone)]
+#[derive(BinRead, Clone, Debug)]
 #[br(little)]
 pub struct Header {
     _compressed: i32,
@@ -42,7 +41,7 @@ pub struct FileIndex {
     pub size: u32,
 
     #[br(count = 260)]
-    pub b_name: Vec<char>,
+    pub b_name: Vec<u8>,
 }
 
 impl FileIndex {
@@ -51,14 +50,14 @@ impl FileIndex {
 
         bytes.extend_from_slice(&self.start_position.to_le_bytes());
         bytes.extend_from_slice(&self.size.to_le_bytes());
-        bytes.append(&mut _chars_to_bytes(&self.b_name));
+        bytes.append(&mut self.b_name.clone());
 
         return bytes;
     }
 
     // Get the string of the name.
     pub fn name(&self) -> String {
-        return bytes_to_string(&self.b_name);
+        return bytes_to_string(&self.b_name).unwrap();
     }
 
     // Get the binary and a cursor for it.
@@ -72,42 +71,6 @@ impl FileIndex {
 
         return Ok(Cursor::new(buffer));
     }
-
-    fn _to_string(&self, index: usize) -> String {
-        let name: String = self.b_name.iter().collect();
-        format!("{};{};{};{}", index, self.start_position, self.size, name)
-    }
-
-    fn _debug_csv(file_indexes: &[Self]) {
-        let mut csv = Vec::from(["Index;Start Position;Size;Name".to_string()]);
-        for (i, file_index) in file_indexes.iter().enumerate() {
-            csv.push(file_index._to_string(i));
-        }
-
-        let csv = csv.join("\n");
-
-        let mut file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(r"C:\Users\Aleksi\Documents\Sports Interactive\EHM 2007\games\file_indexes.csv")
-            .unwrap();
-
-        writeln!(file, "{csv}").unwrap();
-    }
-}
-
-// Make chars to a string.
-pub fn bytes_to_string(bytes: &[char]) -> String {
-    let mut chars = Vec::new();
-
-    for char in bytes {
-        if *char == '\0' {
-            break;
-        }
-        chars.push(*char);
-    }
-
-    return chars.into_iter().collect();
 }
 
 pub fn _load_debug_bin(path: &Path) -> Data {
@@ -148,6 +111,7 @@ pub fn load_save(mut file: File) -> Data {
     data.find_nhl_ids();
     data.find_na_ids();
 
+    // data.create_character_csv();
     return data;
 }
 

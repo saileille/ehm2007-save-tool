@@ -3,9 +3,7 @@ use std::io::Cursor;
 use binread::{BinRead, Error};
 
 use crate::{
-    data::{Data, SHORT_TEXT_LENGTH, THREE_LETTER_TEXT_LENGTH},
-    init::bytes_to_string,
-    to_bytes::_chars_to_bytes,
+    chars::bytes_to_string, data::{Data, SHORT_TEXT_LENGTH, THREE_LETTER_TEXT_LENGTH}
 };
 
 #[derive(BinRead, Clone)]
@@ -13,23 +11,23 @@ use crate::{
 pub struct Continent {
     _regional_strength: f64,
     id: i32,
-    _b_three_letter_name: [char; THREE_LETTER_TEXT_LENGTH as usize],
-    _b_name: [char; SHORT_TEXT_LENGTH as usize],
-    _b_continentality_name: [char; SHORT_TEXT_LENGTH as usize],
+    _b_three_letter_name: [u8; THREE_LETTER_TEXT_LENGTH as usize],
+    _b_name: [u8; SHORT_TEXT_LENGTH as usize],
+    _b_continentality_name: [u8; SHORT_TEXT_LENGTH as usize],
     _gender_name: i8,
 }
 
 impl Continent {
     fn _three_letter_name(&self) -> String {
-        return bytes_to_string(&self._b_three_letter_name);
+        return bytes_to_string(&self._b_three_letter_name).unwrap();
     }
 
     fn _name(&self) -> String {
-        return bytes_to_string(&self._b_name);
+        return bytes_to_string(&self._b_name).unwrap();
     }
 
     fn _continentality_name(&self) -> String {
-        return bytes_to_string(&self._b_continentality_name);
+        return bytes_to_string(&self._b_continentality_name).unwrap();
     }
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
@@ -45,9 +43,9 @@ impl Continent {
 
         bytes.extend_from_slice(&self._regional_strength.to_le_bytes());
         bytes.extend_from_slice(&self.id.to_le_bytes());
-        bytes.append(&mut _chars_to_bytes(&self._b_three_letter_name));
-        bytes.append(&mut _chars_to_bytes(&self._b_name));
-        bytes.append(&mut _chars_to_bytes(&self._b_continentality_name));
+        bytes.append(&mut self._b_three_letter_name.to_vec());
+        bytes.append(&mut self._b_name.to_vec());
+        bytes.append(&mut self._b_continentality_name.to_vec());
         bytes.extend_from_slice(&self._gender_name.to_le_bytes());
 
         return bytes;

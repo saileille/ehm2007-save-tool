@@ -1,4 +1,5 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+mod chars;
 mod globals;
 mod commands;
 mod data;
@@ -6,6 +7,7 @@ mod init;
 mod rating;
 mod research;
 mod to_bytes;
+mod views;
 
 use tauri::Manager as _;
 
@@ -20,7 +22,7 @@ pub fn run() {
             // let data = load_debug_bin("C:/Users/Aleksi/Documents/Sports Interactive/EHM 2007/games/test.sav");
 
             // let handle = app.handle();
-            // let data = load_bin("C:/Users/Aleksi/Documents/Sports Interactive/EHM 2007/games/test.sav");
+            // let data = load_bin(Path::new("C:/Users/Aleksi/Documents/Sports Interactive/EHM 2007/games/test.sav"));
             // handle.manage(data);
 
             #[cfg(debug_assertions)]

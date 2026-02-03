@@ -140,7 +140,7 @@ fn _get_staff_hash(data: &Data) -> HashMap<[String; 6], Staff> {
             person._birthplace(data),
             person.nation_name(data),
             person.second_nation_name(data),
-            person.club_contracted_name(data),
+            person.club_contracted_name(data).unwrap(),
         ];
 
         // Remove the entry entirely in case of duplicates.

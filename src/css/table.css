@@ -5,3 +5,11 @@
 #headers > th:hover {
     cursor: pointer;
 }
+
+th, td {
+    white-space: nowrap;
+}
+
+tbody > tr:nth-child(odd) {
+    background-color: black;
+}

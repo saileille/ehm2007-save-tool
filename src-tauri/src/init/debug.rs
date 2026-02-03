@@ -2,7 +2,7 @@
 
 use std::{fs::File, io::Write};
 
-use crate::data::{self, staff::Staff, Data};
+use crate::data::{self, Data, staff::Staff};
 
 // Make sure players have no unknown values.
 pub fn _check_players(save: &mut Data) {

@@ -3,9 +3,7 @@ use std::io::Cursor;
 use binread::{BinRead, Error};
 
 use crate::{
-    data::{Data, SHORT_TEXT_LENGTH, SIX_LETTER_TEXT_LENGTH, STANDARD_TEXT_LENGTH},
-    init::bytes_to_string,
-    to_bytes::_chars_to_bytes,
+    chars::bytes_to_string, data::{Data, SHORT_TEXT_LENGTH, SIX_LETTER_TEXT_LENGTH, STANDARD_TEXT_LENGTH}
 };
 
 #[derive(BinRead, Clone)]
@@ -17,17 +15,17 @@ pub struct Competition {
     _foreground_colour_id: i32,
     _background_colour_id: i32,
     _trim_colour_id: i32,
-    _b_six_letter_name: [char; SIX_LETTER_TEXT_LENGTH as usize],
+    _b_six_letter_name: [u8; SIX_LETTER_TEXT_LENGTH as usize],
     _gender_name_short: i8,
     _scope: i8,
     _reputation: i16,
     #[br(count = STANDARD_TEXT_LENGTH)]
-    _b_name: Vec<char>,
-    _b_short_name: [char; SHORT_TEXT_LENGTH as usize],
+    _b_name: Vec<u8>,
+    _b_short_name: [u8; SHORT_TEXT_LENGTH as usize],
     #[br(count = STANDARD_TEXT_LENGTH)]
-    _b_playoff_trophy_name: Vec<char>,
+    _b_playoff_trophy_name: Vec<u8>,
     #[br(count = STANDARD_TEXT_LENGTH)]
-    _b_regular_season_trophy_name: Vec<char>,
+    _b_regular_season_trophy_name: Vec<u8>,
     _playoff_trophy_gender: i8,
     _regular_season_trophy_gender: i8,
     _selected: i8,
@@ -37,23 +35,23 @@ pub struct Competition {
 
 impl Competition {
     fn _six_letter_name(&self) -> String {
-        return bytes_to_string(&self._b_six_letter_name);
+        return bytes_to_string(&self._b_six_letter_name).unwrap();
     }
 
     pub fn name(&self) -> String {
-        return bytes_to_string(&self._b_name);
+        return bytes_to_string(&self._b_name).unwrap();
     }
 
     fn _short_name(&self) -> String {
-        return bytes_to_string(&self._b_short_name);
+        return bytes_to_string(&self._b_short_name).unwrap();
     }
 
     fn _playoff_trophy_name(&self) -> String {
-        return bytes_to_string(&self._b_playoff_trophy_name);
+        return bytes_to_string(&self._b_playoff_trophy_name).unwrap();
     }
 
     fn _regular_season_trophy_name(&self) -> String {
-        return bytes_to_string(&self._b_regular_season_trophy_name);
+        return bytes_to_string(&self._b_regular_season_trophy_name).unwrap();
     }
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
@@ -81,14 +79,14 @@ impl Competition {
         bytes.extend_from_slice(&self._foreground_colour_id.to_le_bytes());
         bytes.extend_from_slice(&self._background_colour_id.to_le_bytes());
         bytes.extend_from_slice(&self._trim_colour_id.to_le_bytes());
-        bytes.append(&mut _chars_to_bytes(&self._b_six_letter_name));
+        bytes.append(&mut self._b_six_letter_name.to_vec());
         bytes.extend_from_slice(&self._gender_name_short.to_le_bytes());
         bytes.extend_from_slice(&self._scope.to_le_bytes());
         bytes.extend_from_slice(&self._reputation.to_le_bytes());
-        bytes.append(&mut _chars_to_bytes(&self._b_name));
-        bytes.append(&mut _chars_to_bytes(&self._b_short_name));
-        bytes.append(&mut _chars_to_bytes(&self._b_playoff_trophy_name));
-        bytes.append(&mut _chars_to_bytes(&self._b_regular_season_trophy_name));
+        bytes.append(&mut self._b_name.clone());
+        bytes.append(&mut self._b_short_name.to_vec());
+        bytes.append(&mut self._b_playoff_trophy_name.clone());
+        bytes.append(&mut self._b_regular_season_trophy_name.clone());
         bytes.extend_from_slice(&self._playoff_trophy_gender.to_le_bytes());
         bytes.extend_from_slice(&self._regular_season_trophy_gender.to_le_bytes());
         bytes.extend_from_slice(&self._selected.to_le_bytes());

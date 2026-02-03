@@ -3,9 +3,7 @@ use std::io::Cursor;
 use binread::{BinRead, Error};
 
 use crate::{
-    data::{Data, SHORT_TEXT_LENGTH, STANDARD_TEXT_LENGTH, THREE_LETTER_TEXT_LENGTH},
-    init::bytes_to_string,
-    to_bytes::_chars_to_bytes,
+    chars::bytes_to_string, data::{Data, SHORT_TEXT_LENGTH, STANDARD_TEXT_LENGTH, THREE_LETTER_TEXT_LENGTH}
 };
 
 #[derive(BinRead, Clone)]
@@ -19,27 +17,27 @@ pub struct Currency {
     _name_gender: i8,
     _short_name_gender: i8,
     #[br(count = STANDARD_TEXT_LENGTH)]
-    _b_name: Vec<char>,
-    _b_short_name: [char; SHORT_TEXT_LENGTH as usize],
-    _b_three_letter_code: [char; THREE_LETTER_TEXT_LENGTH as usize],
-    _b_symbol: [char; THREE_LETTER_TEXT_LENGTH as usize],
+    _b_name: Vec<u8>,
+    _b_short_name: [u8; SHORT_TEXT_LENGTH as usize],
+    _b_three_letter_code: [u8; THREE_LETTER_TEXT_LENGTH as usize],
+    _b_symbol: [u8; THREE_LETTER_TEXT_LENGTH as usize],
 }
 
 impl Currency {
     fn _name(&self) -> String {
-        return bytes_to_string(&self._b_name);
+        return bytes_to_string(&self._b_name).unwrap();
     }
 
     fn _short_name(&self) -> String {
-        return bytes_to_string(&self._b_short_name);
+        return bytes_to_string(&self._b_short_name).unwrap();
     }
 
     fn _three_letter_code(&self) -> String {
-        return bytes_to_string(&self._b_three_letter_code);
+        return bytes_to_string(&self._b_three_letter_code).unwrap();
     }
 
     fn _symbol(&self) -> String {
-        return bytes_to_string(&self._b_symbol);
+        return bytes_to_string(&self._b_symbol).unwrap();
     }
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
@@ -60,10 +58,10 @@ impl Currency {
         bytes.extend_from_slice(&self._very_approx_exchange_rate.to_le_bytes());
         bytes.extend_from_slice(&self._name_gender.to_le_bytes());
         bytes.extend_from_slice(&self._short_name_gender.to_le_bytes());
-        bytes.append(&mut _chars_to_bytes(&self._b_name));
-        bytes.append(&mut _chars_to_bytes(&self._b_short_name));
-        bytes.append(&mut _chars_to_bytes(&self._b_three_letter_code));
-        bytes.append(&mut _chars_to_bytes(&self._b_symbol));
+        bytes.append(&mut self._b_name.clone());
+        bytes.append(&mut self._b_short_name.to_vec());
+        bytes.append(&mut self._b_three_letter_code.to_vec());
+        bytes.append(&mut self._b_symbol.to_vec());
 
         return bytes;
     }

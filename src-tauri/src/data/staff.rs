@@ -1,13 +1,12 @@
-use std::{collections::HashMap, io::Cursor};
+use std::{collections::HashMap, io::Cursor, str::Utf8Error};
 
-use binread::{BinRead, Error, attribute};
+use binread::{BinRead, Error};
 use regex::Regex;
-use serde_json::json;
 use tauri::webview::cookie::time::util::is_leap_year;
 use lazy_static::lazy_static;
 
 use crate::{
-    data::{Data, SIDate, city::City, club::Club, nation::Nation, player::{self, Player}}, rating, research::db
+    chars::_bytes_to_string_debug, data::{Data, SIDate, city::City, club::Club, name::Name, nation::Nation, player::{self, Player}}, research::db, views
 };
 
 lazy_static! {
@@ -54,15 +53,15 @@ pub struct Staff {
     _international_goals: u8,
     _international_assists: u8,
     _job_for_nation: i8,
-    adaptability: i8,
+    pub adaptability: i8,
     _job_for_club: i8,
-    ambition: i8,
-    determination: i8,
-    loyalty: i8,
-    pressure: i8,
-    professionalism: i8,
-    sportsmanship: i8,
-    temperament: i8,
+    pub ambition: i8,
+    pub determination: i8,
+    pub loyalty: i8,
+    pub pressure: i8,
+    pub professionalism: i8,
+    pub sportsmanship: i8,
+    pub temperament: i8,
     _playing_squad: i8,
     _classification: i8,
     _club_valuation: i8,
@@ -133,11 +132,19 @@ impl Staff {
     }
 
     pub fn forename(&self, data: &Data) -> String {
-        return data.forenames.get(&self.forename_id).unwrap().name();
+        return data.forenames.get(&self.forename_id).unwrap().name().unwrap();
     }
 
     pub fn surname(&self, data: &Data) -> String {
-        return data.surnames.get(&self.surname_id).unwrap().name();
+        return data.surnames.get(&self.surname_id).unwrap().name().unwrap();
+    }
+
+    pub fn _forename_object(&self, data: &Data) -> Name {
+        return data.forenames.get(&self.forename_id).unwrap().clone();
+    }
+
+    pub fn _surname_object(&self, data: &Data) -> Name {
+        return data.surnames.get(&self.surname_id).unwrap().clone();
     }
 
     fn _birth_town(&self, data: &Data) -> Option<City> {
@@ -161,7 +168,25 @@ impl Staff {
             None => String::new(),
         };
 
-        return format!("{}{}{}", town._name(), state_string, nation_string);
+        let town_name = match town._name() {
+            Ok(s) => s,
+            Err(e) => {
+                let s = _bytes_to_string_debug(&town._b_name);
+                println!(
+                    "{e}\nbytes: {:?}\nstring: {}\nname: {} {}\nbirth year: {}\nnationality: {}\nclub: {}",
+                    town._b_name,
+                    s,
+                    self.forename(data),
+                    self.surname(data),
+                    self.date_of_birth.year,
+                    self.nation_name(data),
+                    self.club_contracted_name(data).unwrap(),
+                );
+                s
+            }
+        };
+
+        return format!("{}{}{}", town_name, state_string, nation_string);
     }
 
     fn _nation(&self, data: &Data) -> Nation {
@@ -214,14 +239,14 @@ impl Staff {
         };
     }
 
-    fn _club_contracted(&self, data: &Data) -> Option<Club> {
+    pub fn _club_contracted(&self, data: &Data) -> Option<Club> {
         return data.clubs.get(&self.club_contracted_id).cloned();
     }
 
-    pub fn club_contracted_name(&self, data: &Data) -> String {
+    pub fn club_contracted_name(&self, data: &Data) -> Result<String, Utf8Error> {
         return match data.clubs.get(&self.club_contracted_id) {
             Some(c) => c.name(),
-            None => String::new(),
+            None => Ok(String::new()),
         };
     }
 
@@ -232,14 +257,14 @@ impl Staff {
         };
     }
 
-    fn club_playing(&self, data: &Data) -> Option<Club> {
+    pub fn club_playing(&self, data: &Data) -> Option<Club> {
         return data.clubs.get(&self.club_playing_id).cloned();
     }
 
-    fn club_playing_name(&self, data: &Data) -> String {
+    pub fn club_playing_name(&self, data: &Data) -> Result<String, Utf8Error> {
         return match data.clubs.get(&self.club_playing_id) {
             Some(c) => c.name(),
-            None => String::new(),
+            None => Ok(String::new()),
         };
     }
 
@@ -255,7 +280,7 @@ impl Staff {
     }
 
     pub fn full_name(&self, data: &Data) -> String {
-        format!("{}, {}", self.surname(data), self.forename(data))
+        format!("{} {}", self.forename(data), self.surname(data))
     }
 
     // Get the nation the player has declared for, if one exists.
@@ -363,69 +388,21 @@ impl Staff {
     }
 
     // Create an array of player data.
-    pub fn create_player_view(&self, p: Player, data: &Data, headers: &[String], counter: usize) -> Vec<serde_json::Value> {
-        let mut row = Vec::new();
+    pub fn create_player_view(&self, p: Player, data: &Data, headers: &[String], counter: usize) -> views::player::Player {
+        let mut player = views::player::Player {
+            forename: self.forename(data),
+            surname: self.surname(data),
+            positions: p.position_vec(),
+
+            ..Default::default()
+        };
 
         for header in headers {
             let header = header.as_str();
-            row.push(match header {
-                "Random" => json!(counter),
-                "Name" => json!(self.full_name(data)),
-                "Nation" => json!(self.nation_name(data)),
-                "Second Nation" => json!(self.second_nation_name(data)),
-                "Club Contracted" => json!(self.club_contracted_name(data)),
-                "Club Playing" => json!(self.club_playing_name(data)),
-                "Birthday" => json!(self.date_of_birth.to_days()),
-                "Position" => json!(p.position_string()),
-                "GK Rating" => json!(self.gk_rating(data)),
-                "LD Rating" => json!(self.ld_rating(data)),
-                "RD Rating" => json!(self.rd_rating(data)),
-                "LW Rating" => json!(self.lw_rating(data)),
-                "C Rating" => json!(self.c_rating(data)),
-                "RW Rating" => json!(self.rw_rating(data)),
-                "Adaptability" => json!(self.adaptability),
-                "Ambition" => json!(self.ambition),
-                "Determination" => json!(self.determination),
-                "Loyalty" => json!(self.loyalty),
-                "Pressure" => json!(self.pressure),
-                "Professionalism" => json!(self.professionalism),
-                "Sportsmanship" => json!(self.sportsmanship),
-                "Temperament" => json!(self.temperament),
-                "Current Ability" => json!(p.current_ability),
-                "Potential Ability" => json!(p.potential_ability),
-                "Acceleration" => json!(p.acceleration),
-                "Aggression" => json!(p.aggression),
-                "Agility" => json!(p.agility),
-                "Bravery" => json!(p.bravery),
-                "Consistency" => json!(p.consistency),
-                "Dirtiness" => json!(p.dirtiness),
-                "Flair" => json!(p.flair),
-                "Important Matches" => json!(p.important_matches),
-                "Injury Proneness" => json!(p.injury_proneness),
-                "Influence" => json!(p.leadership),
-                "Natural Fitness" => json!(p.natural_fitness),
-                "Speed" => json!(p.pace),
-                "Stamina" => json!(p.stamina),
-                "Strength" => json!(p.strength),
-                "Teamwork" => json!(p.teamwork),
-                "Versatility" => json!(p.versatility),
-                "Work Rate" => json!(p.work_rate),
-                "GK" => json!(p.goaltender),
-                "LD" => json!(p.left_defence),
-                "RD" => json!(p.right_defence),
-                "LW" => json!(p.left_wing),
-                "C" => json!(p.center),
-                "RW" => json!(p.right_wing),
-                "Agitation" => json!(p.agitation),
-                "Defensive Role" => json!(p.defensive_role),
-                "Offensive Role" => json!(p.offensive_role),
-                "Pass Tendency" => json!(p.pass_tendency),
-
-                attribute => json!(p.convert_attribute(attribute)),
-            });
+            player.add_column(data, counter, header, self, &p);
         }
 
-        return row;
+        return player;
     }
 
     // Get the dates when the person has the current age.
@@ -553,7 +530,7 @@ impl Staff {
     }
 
     // Get the person's ability as a goalkeeper.
-    fn gk_rating(&self, data: &Data) -> f64 {
+    pub fn gk_rating(&self, data: &Data) -> f64 {
         let p = self.player_data(data).unwrap();
         if !p.is_goalie() {
             return 0.0;
@@ -600,7 +577,7 @@ impl Staff {
     }
 
     // Get the person's ability as a centre forward.
-    fn c_rating(&self, data: &Data) -> f64 {
+    pub fn c_rating(&self, data: &Data) -> f64 {
         let p = self.player_data(data).unwrap();
         if p.is_goalie() {
             return 0.0;
@@ -619,7 +596,7 @@ impl Staff {
     }
 
     // Get the person's ability as a left defender.
-    fn ld_rating(&self, data: &Data) -> f64 {
+    pub fn ld_rating(&self, data: &Data) -> f64 {
         let p = self.player_data(data).unwrap();
         if p.is_goalie() {
             return 0.0;
@@ -629,7 +606,7 @@ impl Staff {
     }
 
     // Get the person's ability as a right defender.
-    fn rd_rating(&self, data: &Data) -> f64 {
+    pub fn rd_rating(&self, data: &Data) -> f64 {
         let p = self.player_data(data).unwrap();
         if p.is_goalie() {
             return 0.0;
@@ -639,7 +616,7 @@ impl Staff {
     }
 
     // Get the person's ability as a left winger.
-    fn lw_rating(&self, data: &Data) -> f64 {
+    pub fn lw_rating(&self, data: &Data) -> f64 {
         let p = self.player_data(data).unwrap();
         if p.is_goalie() {
             return 0.0;
@@ -649,7 +626,7 @@ impl Staff {
     }
 
     // Get the person's ability as a right winger.
-    fn rw_rating(&self, data: &Data) -> f64 {
+    pub fn rw_rating(&self, data: &Data) -> f64 {
         let p = self.player_data(data).unwrap();
         if p.is_goalie() {
             return 0.0;

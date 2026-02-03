@@ -3,9 +3,7 @@ use std::io::Cursor;
 use binread::{BinRead, Error};
 
 use crate::{
-    data::{Data, SHORT_TEXT_LENGTH, STANDARD_TEXT_LENGTH, THREE_LETTER_TEXT_LENGTH},
-    init::bytes_to_string,
-    to_bytes::_chars_to_bytes,
+    chars::bytes_to_string, data::{Data, SHORT_TEXT_LENGTH, STANDARD_TEXT_LENGTH, THREE_LETTER_TEXT_LENGTH}
 };
 
 #[derive(BinRead, Clone)]
@@ -41,13 +39,13 @@ pub struct Nation {
     _rival1_id: i32,
     _rival2_id: i32,
     _rival3_id: i32,
-    _b_three_letter_name: [char; THREE_LETTER_TEXT_LENGTH as usize],
+    _b_three_letter_name: [u8; THREE_LETTER_TEXT_LENGTH as usize],
     _number_clubs: i16,
     _reputation: i16,
     #[br(count = STANDARD_TEXT_LENGTH)]
-    b_name: Vec<char>,
-    _b_short_name: [char; SHORT_TEXT_LENGTH as usize],
-    _b_nationality_name: [char; SHORT_TEXT_LENGTH as usize],
+    b_name: Vec<u8>,
+    _b_short_name: [u8; SHORT_TEXT_LENGTH as usize],
+    _b_nationality_name: [u8; SHORT_TEXT_LENGTH as usize],
     _gender_name: i8,
     _gender_name_short: i8,
     _region: i8,
@@ -66,19 +64,19 @@ pub struct Nation {
 
 impl Nation {
     pub fn _three_letter_name(&self) -> String {
-        return bytes_to_string(&self._b_three_letter_name);
+        return bytes_to_string(&self._b_three_letter_name).unwrap();
     }
 
     pub fn name(&self) -> String {
-        return bytes_to_string(&self.b_name);
+        return bytes_to_string(&self.b_name).unwrap();
     }
 
     pub fn _short_name(&self) -> String {
-        return bytes_to_string(&self._b_short_name);
+        return bytes_to_string(&self._b_short_name).unwrap();
     }
 
     fn _nationality_name(&self) -> String {
-        return bytes_to_string(&self._b_nationality_name);
+        return bytes_to_string(&self._b_nationality_name).unwrap();
     }
 
     pub fn parse(data: &mut Data, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
@@ -122,12 +120,12 @@ impl Nation {
         bytes.extend_from_slice(&self._rival1_id.to_le_bytes());
         bytes.extend_from_slice(&self._rival2_id.to_le_bytes());
         bytes.extend_from_slice(&self._rival3_id.to_le_bytes());
-        bytes.append(&mut _chars_to_bytes(&self._b_three_letter_name));
+        bytes.append(&mut self._b_three_letter_name.to_vec());
         bytes.extend_from_slice(&self._number_clubs.to_le_bytes());
         bytes.extend_from_slice(&self._reputation.to_le_bytes());
-        bytes.append(&mut _chars_to_bytes(&self.b_name));
-        bytes.append(&mut _chars_to_bytes(&self._b_short_name));
-        bytes.append(&mut _chars_to_bytes(&self._b_nationality_name));
+        bytes.append(&mut self.b_name.clone());
+        bytes.append(&mut self._b_short_name.to_vec());
+        bytes.append(&mut self._b_nationality_name.to_vec());
         bytes.extend_from_slice(&self._gender_name.to_le_bytes());
         bytes.extend_from_slice(&self._gender_name_short.to_le_bytes());
         bytes.extend_from_slice(&self._region.to_le_bytes());
