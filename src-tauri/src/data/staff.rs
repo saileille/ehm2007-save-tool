@@ -1,16 +1,31 @@
 use std::{collections::HashMap, io::Cursor};
 
-use binread::{BinRead, Error};
+use binread::{BinRead, Error, attribute};
 use regex::Regex;
 use serde_json::json;
 use tauri::webview::cookie::time::util::is_leap_year;
+use lazy_static::lazy_static;
 
 use crate::{
-    data::{Data, SIDate, city::City, club::Club, nation::Nation, player::Player},
-    research::db,
+    data::{Data, SIDate, city::City, club::Club, nation::Nation, player::{self, Player}}, rating, research::db
 };
 
-#[derive(BinRead, Clone)]
+lazy_static! {
+    pub static ref PERFECT: Staff = Staff {
+        adaptability: 20,
+        ambition: 20,
+        determination: 20,
+        loyalty: 20,
+        pressure: 20,
+        professionalism: 20,
+        sportsmanship: 20,
+        temperament: 20,
+
+        ..Default::default()
+    };
+}
+
+#[derive(BinRead, Clone, Default)]
 #[br(little)]
 pub struct Staff {
     pub id: i32,
@@ -217,7 +232,7 @@ impl Staff {
         };
     }
 
-    fn _club_playing(&self, data: &Data) -> Option<Club> {
+    fn club_playing(&self, data: &Data) -> Option<Club> {
         return data.clubs.get(&self.club_playing_id).cloned();
     }
 
@@ -256,10 +271,49 @@ impl Staff {
         return Some(self.second_nation_id);
     }
 
-    pub fn check_player_filters(&self, nation_id: i32, national_team_check: bool, country_choice_check: bool) -> bool {
+    pub fn check_player_filters(
+            &self,
+            data: &Data,
+            nation_id: i32,
+            national_team_check: bool,
+            country_choice_check: bool,
+            earliest_birth_year: i16,
+            exclude_nhl: bool,
+            exclude_na: bool) -> bool {
         return self.has_nationality(nation_id)
         && self.check_national_team(nation_id, national_team_check)
-        && self.check_country_choice(nation_id, country_choice_check);
+        && self.check_country_choice(nation_id, country_choice_check)
+        && self.has_given_age(earliest_birth_year)
+        && self.check_na_exclusion(data, exclude_na, exclude_nhl);
+    }
+
+    // Check if the player is in the NHL or North America.
+    fn check_na_exclusion(&self, data: &Data, exclude_na: bool, exclude_nhl: bool) -> bool {
+        if !exclude_nhl && !exclude_na {
+            return true;
+        }
+
+        let club_playing = self.club_playing(data);
+        if club_playing.is_none() {
+            return true;
+        }
+
+        let club_playing = club_playing.unwrap();
+
+        if exclude_na && data.na_ids.contains(&club_playing.nation_id) {
+            return false;
+        }
+
+        if exclude_nhl {
+            return !data.nhl_ids.contains(&club_playing.division_id);
+        }
+
+        return true;
+    }
+
+    // Check if the player falls within specified age group.
+    fn has_given_age(&self, earliest_birth_year: i16) -> bool {
+        return self.date_of_birth.year >= earliest_birth_year;
     }
 
     // Check if the player can play for the national team of the given nation.
@@ -309,7 +363,7 @@ impl Staff {
     }
 
     // Create an array of player data.
-    pub fn create_player_view(&self, p: Player, data: &Data, headers: &[String], counter: usize) -> Option<Vec<serde_json::Value>> {
+    pub fn create_player_view(&self, p: Player, data: &Data, headers: &[String], counter: usize) -> Vec<serde_json::Value> {
         let mut row = Vec::new();
 
         for header in headers {
@@ -322,6 +376,13 @@ impl Staff {
                 "Club Contracted" => json!(self.club_contracted_name(data)),
                 "Club Playing" => json!(self.club_playing_name(data)),
                 "Birthday" => json!(self.date_of_birth.to_days()),
+                "Position" => json!(p.position_string()),
+                "GK Rating" => json!(self.gk_rating(data)),
+                "LD Rating" => json!(self.ld_rating(data)),
+                "RD Rating" => json!(self.rd_rating(data)),
+                "LW Rating" => json!(self.lw_rating(data)),
+                "C Rating" => json!(self.c_rating(data)),
+                "RW Rating" => json!(self.rw_rating(data)),
                 "Adaptability" => json!(self.adaptability),
                 "Ambition" => json!(self.ambition),
                 "Determination" => json!(self.determination),
@@ -364,7 +425,7 @@ impl Staff {
             });
         }
 
-        return Some(row);
+        return row;
     }
 
     // Get the dates when the person has the current age.
@@ -406,6 +467,195 @@ impl Staff {
         }
 
         return (min, max);
+    }
+
+    // Get the person's 'score' as a goalkeeper.
+    fn gk_attribute_score(&self, p: &Player) -> usize {
+        let x30 = p.agility as usize + p.bravery as usize + self.determination as usize + p.convert_attribute("Glove") as usize
+        + p.convert_attribute("Recovery") as usize + p.convert_attribute("Reflexes") as usize;
+
+        let x20 = p.convert_attribute("Blocker") as usize + p.convert_attribute("One On Ones") as usize
+        + p.convert_attribute("Positioning") as usize + p.convert_attribute("Rebound Control") as usize
+        + p.stamina as usize;
+
+        let x10 = p.convert_attribute("Balance") as usize + p.convert_attribute("Passing") as usize
+        + p.convert_attribute("Pokecheck") as usize + self.pressure as usize + self.professionalism as usize + self.sportsmanship as usize
+        + p.convert_attribute("Stickhandling") as usize + self.temperament as usize;
+
+        let x1 = p.acceleration as usize + p.agitation as usize + p.convert_attribute("Anticipation") as usize
+        + p.convert_attribute("Decisions") as usize + p.flair as usize + p.leadership as usize + p.natural_fitness as usize + p.pace as usize
+        + p.strength as usize + p.teamwork as usize;
+
+        return x30 * 30 + x20 * 20 + x10 * 10 + x1;
+    }
+
+    // Get the person's 'score' as a defender.
+    fn d_attribute_score(&self, p: &Player) -> usize {
+        let x30 = p.acceleration as usize + p.convert_attribute("Anticipation") as usize + p.bravery as usize
+        + p.convert_attribute("Checking") as usize + self.determination as usize + p.convert_attribute("Hitting") as usize
+        + p.convert_attribute("Passing") as usize + p.convert_attribute("Pokecheck") as usize
+        + p.convert_attribute("Positioning") as usize + self.pressure as usize + p.convert_attribute("Slapshot") as usize
+        + p.pace as usize + p.teamwork as usize;
+
+        let x20 = p.convert_attribute("Balance") as usize + p.convert_attribute("Decisions") as usize + p.stamina as usize
+        + p.strength as usize;
+
+        let x10 = p.agility as usize + p.agitation as usize + p.convert_attribute("Creativity") as usize + p.flair as usize
+        + p.convert_attribute("Off The Puck") as usize + self.professionalism as usize + self.sportsmanship as usize
+        + p.convert_attribute("Stickhandling") as usize + self.temperament as usize + p.convert_attribute("Wristshot") as usize;
+
+        let x1 = p.convert_attribute("Deflections") as usize + p.convert_attribute("Deking") as usize
+        + p.leadership as usize + p.natural_fitness as usize;
+
+        return x30 * 30 + x20 * 20 + x10 * 10 + x1;
+    }
+
+    // Get the person's 'score' as a winger.
+    fn w_attribute_score(&self, p: &Player) -> usize {
+        let x30 = p.acceleration as usize + p.agility as usize + p.convert_attribute("Anticipation") as usize
+        + self.determination as usize + p.convert_attribute("Passing") as usize + self.pressure as usize + p.pace as usize
+        + p.convert_attribute("Stickhandling") as usize + p.convert_attribute("Wristshot") as usize;
+
+        let x20 = p.convert_attribute("Balance") as usize + p.bravery as usize + p.convert_attribute("Creativity") as usize
+        + p.convert_attribute("Decisions") as usize + p.convert_attribute("Deking") as usize + p.flair as usize
+        + p.convert_attribute("Off The Puck") as usize + p.convert_attribute("Positioning") as usize + p.stamina as usize
+        + p.strength as usize + p.teamwork as usize;
+
+        let x10 = p.agitation as usize + p.convert_attribute("Checking") as usize + p.convert_attribute("Deflections") as usize
+        + p.convert_attribute("Hitting") as usize + p.convert_attribute("Pokecheck") as usize + self.professionalism as usize
+        + p.convert_attribute("Slapshot") as usize + self.sportsmanship as usize + self.temperament as usize;
+
+        let x1 = p.leadership as usize + p.natural_fitness as usize;
+
+        return x30 * 30 + x20 * 20 + x10 * 10 + x1;
+    }
+
+    // Get the person's 'score' as a centre forward.
+    fn c_attribute_score(&self, p: &Player) -> usize {
+        let x30 = p.acceleration as usize + p.convert_attribute("Anticipation") as usize
+        + p.convert_attribute("Creativity") as usize + self.determination as usize + p.convert_attribute("Faceoffs") as usize
+        + p.convert_attribute("Passing") as usize + self.pressure as usize + p.pace as usize
+        + p.convert_attribute("Stickhandling") as usize + p.strength as usize + p.convert_attribute("Wristshot") as usize;
+
+        let x20 = p.agility as usize + p.convert_attribute("Balance") as usize + p.bravery as usize
+        + p.convert_attribute("Checking") as usize + p.convert_attribute("Decisions") as usize
+        + p.convert_attribute("Deflections") as usize + p.convert_attribute("Deking") as usize
+        + p.flair as usize + p.convert_attribute("Hitting") as usize + p.convert_attribute("Off The Puck") as usize
+        + p.convert_attribute("Pokecheck") as usize + p.convert_attribute("Positioning") as usize + p.stamina as usize
+        + p.teamwork as usize;
+
+        let x10 = p.agitation as usize + self.professionalism as usize + p.convert_attribute("Slapshot") as usize
+        + self.sportsmanship as usize + self.temperament as usize;
+
+        let x1 = p.leadership as usize + p.natural_fitness as usize;
+
+        return x30 * 30 + x20 * 20 + x10 * 10 + x1;
+    }
+
+    // Get the person's ability as a goalkeeper.
+    fn gk_rating(&self, data: &Data) -> f64 {
+        let p = self.player_data(data).unwrap();
+        if !p.is_goalie() {
+            return 0.0;
+        }
+
+        let perfect_player = &player::PERFECT;
+
+        let attribute_score = self.gk_attribute_score(&p);
+        let perfect_score = PERFECT.gk_attribute_score(perfect_player);
+
+        let attribute_rating = attribute_score as f64 / perfect_score as f64;
+        let ca_rating = p.current_ability as f64 / perfect_player.current_ability as f64;
+
+        let combined_rating = (attribute_rating + ca_rating) / 2.0;
+        return combined_rating * p.consistency_rating();
+    }
+
+    // Get the person's ability as a defender.
+    fn d_rating(&self, p: &Player) -> f64 {
+        let perfect_player = &player::PERFECT;
+
+        let attribute_score = self.d_attribute_score(p);
+        let perfect_score = PERFECT.d_attribute_score(perfect_player);
+
+        let attribute_rating = attribute_score as f64 / perfect_score as f64;
+        let ca_rating = p.current_ability as f64 / perfect_player.current_ability as f64;
+
+        let combined_rating = (attribute_rating + ca_rating) / 2.0;
+        return combined_rating * p.consistency_rating();
+    }
+
+    // Get the person's ability as a winger.
+    fn w_rating(&self, p: &Player) -> f64 {
+        let perfect_player = &player::PERFECT;
+
+        let attribute_score = self.w_attribute_score(p);
+        let perfect_score = PERFECT.w_attribute_score(perfect_player);
+
+        let attribute_rating = attribute_score as f64 / perfect_score as f64;
+        let ca_rating = p.current_ability as f64 / perfect_player.current_ability as f64;
+
+        let combined_rating = (attribute_rating + ca_rating) / 2.0;
+        return combined_rating * p.consistency_rating();
+    }
+
+    // Get the person's ability as a centre forward.
+    fn c_rating(&self, data: &Data) -> f64 {
+        let p = self.player_data(data).unwrap();
+        if p.is_goalie() {
+            return 0.0;
+        }
+
+        let perfect_player = &player::PERFECT;
+
+        let attribute_score = self.c_attribute_score(&p);
+        let perfect_score = PERFECT.c_attribute_score(perfect_player);
+
+        let attribute_rating = attribute_score as f64 / perfect_score as f64;
+        let ca_rating = p.current_ability as f64 / perfect_player.current_ability as f64;
+
+        let combined_rating = (attribute_rating + ca_rating) / 2.0;
+        return combined_rating * p.consistency_rating() * p.position_rating(p.center);
+    }
+
+    // Get the person's ability as a left defender.
+    fn ld_rating(&self, data: &Data) -> f64 {
+        let p = self.player_data(data).unwrap();
+        if p.is_goalie() {
+            return 0.0;
+        }
+
+        return self.d_rating(&p) * p.position_rating(p.left_defence);
+    }
+
+    // Get the person's ability as a right defender.
+    fn rd_rating(&self, data: &Data) -> f64 {
+        let p = self.player_data(data).unwrap();
+        if p.is_goalie() {
+            return 0.0;
+        }
+
+        return self.d_rating(&p) * p.position_rating(p.right_defence);
+    }
+
+    // Get the person's ability as a left winger.
+    fn lw_rating(&self, data: &Data) -> f64 {
+        let p = self.player_data(data).unwrap();
+        if p.is_goalie() {
+            return 0.0;
+        }
+
+        return self.w_rating(&p) * p.position_rating(p.left_wing);
+    }
+
+    // Get the person's ability as a right winger.
+    fn rw_rating(&self, data: &Data) -> f64 {
+        let p = self.player_data(data).unwrap();
+        if p.is_goalie() {
+            return 0.0;
+        }
+
+        return self.w_rating(&p) * p.position_rating(p.right_wing);
     }
 
     pub fn _merge_players(

@@ -11,7 +11,7 @@ use crate::{
 #[derive(BinRead, Clone)]
 #[br(little)]
 pub struct Competition {
-    id: i32,
+    pub id: i32,
     _continent_id: i32,
     _nation_id: i32,
     _foreground_colour_id: i32,
@@ -40,7 +40,7 @@ impl Competition {
         return bytes_to_string(&self._b_six_letter_name);
     }
 
-    fn _name(&self) -> String {
+    pub fn name(&self) -> String {
         return bytes_to_string(&self._b_name);
     }
 

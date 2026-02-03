@@ -21,8 +21,8 @@ pub struct Club {
     _tactic_selected: i32,
     _fan_support: i32,
     _player_budget: i32,
-    _nation_id: i32,
-    _division_id: i32,
+    pub nation_id: i32,
+    pub division_id: i32,
     _last_division_id: i32,
     _reserve_division_id: i32,
     _stadium_id: i32,
@@ -126,8 +126,8 @@ impl Club {
         bytes.extend_from_slice(&self._tactic_selected.to_le_bytes());
         bytes.extend_from_slice(&self._fan_support.to_le_bytes());
         bytes.extend_from_slice(&self._player_budget.to_le_bytes());
-        bytes.extend_from_slice(&self._nation_id.to_le_bytes());
-        bytes.extend_from_slice(&self._division_id.to_le_bytes());
+        bytes.extend_from_slice(&self.nation_id.to_le_bytes());
+        bytes.extend_from_slice(&self.division_id.to_le_bytes());
         bytes.extend_from_slice(&self._last_division_id.to_le_bytes());
         bytes.extend_from_slice(&self._reserve_division_id.to_le_bytes());
         bytes.extend_from_slice(&self._stadium_id.to_le_bytes());

@@ -1,10 +1,69 @@
 use std::io::Cursor;
-
+use lazy_static::lazy_static;
 use binread::{BinRead, Error};
 
-use crate::data::{convert_attribute, Data};
 
-#[derive(BinRead, Clone)]
+use crate::{data::{Data, convert_attribute}, rating};
+
+lazy_static! {
+    pub static ref PERFECT: Player = Player {
+        current_ability: 200,
+        potential_ability: 200,
+        acceleration: 20,
+        aggression: 20,
+        agility: 20,
+        anticipation_raw: 127,
+        balance_raw: 127,
+        bravery: 20,
+        consistency: 20,
+        decisions_raw: 127,
+        dirtiness: 1,
+        flair: 20,
+        important_matches: 20,
+        injury_proneness: 1,
+        leadership: 20,
+        movement_raw: 127,
+        natural_fitness: 20,
+        one_on_ones_raw: 127,
+        pace: 20,
+        passing_raw: 127,
+        positioning_raw: 127,
+        reflexes_raw: 127,
+        stamina: 20,
+        strength: 20,
+        teamwork: 20,
+        versatility: 20,
+        vision_raw: 127,
+        work_rate: 20,
+        goaltender: 20,
+        left_defence: 20,
+        right_defence: 20,
+        left_wing: 20,
+        center: 20,
+        right_wing: 20,
+        agitation: 20,
+        blocker_raw: 127,
+        checking_raw: 127,
+        defensive_role: 20,
+        deflections_raw: 127,
+        deking_raw: 127,
+        faceoffs_raw: 127,
+        fighting_raw: 127,
+        glove_raw: 127,
+        hitting_raw: 127,
+        offensive_role: 20,
+        pokecheck_raw: 127,
+        rebounds_raw: 127,
+        recovery_raw: 127,
+        slapshot_raw: 127,
+        stickhandling_raw: 127,
+        wristshot_raw: 127,
+
+        ..Default::default()
+    };
+}
+
+#[derive(BinRead, Clone, Default)]
 #[br(little)]
 pub struct Player {
     pub id: i32,
@@ -83,6 +142,31 @@ impl Player {
         return Ok(());
     }
 
+    pub fn position_string(&self) -> String {
+        let mut positions = Vec::from([
+            ("G", self.goaltender),
+            ("LD", self.left_defence),
+            ("RD", self.right_defence),
+            ("LW", self.left_wing),
+            ("C", self.center),
+            ("RW", self.right_wing),
+        ]);
+
+        positions.sort_by(|a, b| b.1.cmp(&a.1));
+
+        let position_string: Vec<String> = positions.into_iter()
+            .filter_map(|(pos, score)| {
+                if score < 16 {
+                    return None;
+                }
+                else {
+                    return Some(pos.to_string());
+                }
+            })
+            .collect();
+        return position_string.join("/");
+    }
+
     pub fn _to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
@@ -155,7 +239,7 @@ impl Player {
         return bytes;
     }
 
-    pub fn _is_goalie(&self) -> bool {
+    pub fn is_goalie(&self) -> bool {
         return self.goaltender == 20;
     }
 
@@ -188,5 +272,29 @@ impl Player {
         };
 
         return convert_attribute(self.current_ability, attribute);
+    }
+
+    // Get a 'consistency rating' for the player.
+    pub fn consistency_rating(&self) -> f64 {
+        let score = self.consistency + self.important_matches + self.work_rate - 3;
+        let perfect_score = PERFECT.consistency + PERFECT.important_matches + PERFECT.work_rate - 3;
+
+        return rating::cap(score as f64 / perfect_score as f64, 0.5);
+    }
+
+    // Get a position rating for the player.
+    pub fn position_rating(&self, mut position: i8) -> f64 {
+        if position == 20 {
+            return 1.0;
+        }
+
+        if position == 0 {
+            position = 1;
+        }
+
+        let score = position + self.versatility - 2;
+        let perfect_score = PERFECT.goaltender + PERFECT.versatility - 2;
+
+        return rating::cap(score as f64 / perfect_score as f64, 0.5);
     }
 }

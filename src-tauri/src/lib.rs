@@ -3,6 +3,7 @@ mod globals;
 mod commands;
 mod data;
 mod init;
+mod rating;
 mod research;
 mod to_bytes;
 

@@ -143,7 +143,11 @@ pub fn load_save(mut file: File) -> Data {
     let mut data = Data::initialise(&mut cursor);
 
     parse_files(&mut cursor, &mut data);
+
     data.calculate_ingame_date();
+    data.find_nhl_ids();
+    data.find_na_ids();
+
     return data;
 }
 

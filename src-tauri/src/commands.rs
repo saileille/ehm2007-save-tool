@@ -5,7 +5,15 @@ use crate::{data::Data, init::load_bin};
 
 #[tauri::command]
 // Get the players in the save.
-pub fn fetch_players(handle: AppHandle, headers: Vec<String>, nation_id: i32, national_team_check: bool, country_choice_check: bool) -> Vec<Vec<serde_json::Value>> {
+pub fn fetch_players(
+        handle: AppHandle,
+        headers: Vec<String>,
+        nation_id: i32,
+        national_team_check: bool,
+        country_choice_check: bool,
+        earliest_birth_year: i16,
+        exclude_nhl: bool,
+        exclude_na: bool) -> Vec<Vec<serde_json::Value>> {
     let data = handle.state::<Data>();
 
     let mut counter = 0;
@@ -17,13 +25,13 @@ pub fn fetch_players(handle: AppHandle, headers: Vec<String>, nation_id: i32, na
             }
 
             let player = player.unwrap();
-            if !person.check_player_filters(nation_id, national_team_check, country_choice_check) {
+            if !person.check_player_filters(&data, nation_id, national_team_check, country_choice_check, earliest_birth_year, exclude_nhl, exclude_na) {
                 return None
             }
 
             let row = person.create_player_view(player, &data, &headers, counter);
             counter += 1;
-            return row;
+            return Some(row);
         })
         .collect();
 
@@ -41,8 +49,8 @@ pub fn get_ingame_date(handle: AppHandle) -> [usize; 2] {
 }
 
 #[tauri::command]
-// Load a save file.
-pub fn load_save(handle: AppHandle) {
+// Load a save file. Return false if user cancelled.
+pub fn load_save(handle: AppHandle) -> bool {
     let filepath = match handle
         .dialog()
         .file()
@@ -51,11 +59,19 @@ pub fn load_save(handle: AppHandle) {
         .blocking_pick_file()
     {
         Some(p) => p,
-        None => return,
+        None => return false,
     };
 
     let data = load_bin(filepath.as_path().unwrap());
-    handle.manage(data);
+    let old_data = handle.try_state::<Data>();
+    if old_data.is_none() {
+        handle.manage(data);
+    }
+    else {
+        // old_data.unwrap().update(data);
+    }
+
+    return true;
 }
 
 #[tauri::command]

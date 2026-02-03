@@ -21,6 +21,9 @@ export const createFilterLayer = async (main: HTMLElement, filtersButton: HTMLBu
     await createNationFilter(filterMenu);
     createCanPlayForCountryCheck(filterMenu);
     createCanChooseCountryCheck(filterMenu);
+    createBirthYearFilter(filterMenu);
+    createNHLExclusion(filterMenu);
+    createNorthAmericaExclusion(filterMenu);
 
     const applyFiltersButton = document.createElement("button");
     applyFiltersButton.textContent = "Apply";
@@ -81,11 +84,53 @@ const createCanChooseCountryCheck = (filterMenu: HTMLDivElement) => {
     filterMenu.append(checkbox, label);
 };
 
+// Create a filter for birth year.
+const createBirthYearFilter = (filterMenu: HTMLDivElement) => {
+    const label = document.createElement("label");
+    label.htmlFor = "earliest-birth-year";
+    label.textContent = "Earliest Birth Year";
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.id = "earliest-birth-year";
+    input.value = "0";
+
+    filterMenu.append(label, input);
+};
+
+// Create a filter for excluding NHL players.
+const createNHLExclusion = (filterMenu: HTMLDivElement) => {
+    const label = document.createElement("label");
+    label.htmlFor = "exclude-nhl";
+    label.textContent = "Ignore NHL Players";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = "exclude-nhl";
+
+    filterMenu.append(checkbox, label);
+};
+
+// Create a filter for excluding players playing in North America.
+const createNorthAmericaExclusion = (filterMenu: HTMLDivElement) => {
+    const label = document.createElement("label");
+    label.htmlFor = "exclude-na";
+    label.textContent = "Ignore Players in North America";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = "exclude-na";
+
+    filterMenu.append(checkbox, label);
+};
+
 // Apply the filters.
 const applyFilters = async () => {
     const nationId = Number((document.getElementById("nation") as HTMLSelectElement).value);
     const nationalTeamCheck = (document.getElementById("can-play-for-country") as HTMLInputElement).checked;
     const countryChoiceCheck = (document.getElementById("can-choose-country") as HTMLInputElement).checked;
-    await fetchPlayers(nationId, nationalTeamCheck, countryChoiceCheck);
-
+    const earliestBirthYear = Number((document.getElementById("earliest-birth-year") as HTMLInputElement).value);
+    const excludeNHL = (document.getElementById("exclude-nhl") as HTMLInputElement).checked;
+    const excludeNA = (document.getElementById("exclude-na") as HTMLInputElement).checked;
+    await fetchPlayers(nationId, nationalTeamCheck, countryChoiceCheck, earliestBirthYear, excludeNHL, excludeNA);
 }

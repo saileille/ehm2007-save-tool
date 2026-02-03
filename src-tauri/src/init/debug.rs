@@ -45,7 +45,7 @@ pub fn _check_players(save: &mut Data) {
         };
 
         // Goalkeepers have less attributes to look for.
-        if player_data._is_goalie() {
+        if player_data.is_goalie() {
             continue;
         }
 

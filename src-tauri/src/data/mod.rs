@@ -47,7 +47,7 @@ static SIX_LETTER_TEXT_LENGTH: u8 = 7;
 // Everything.
 #[derive(Default, Clone)]
 pub struct Data {
-    pub _header: Option<Header>,
+    pub header: Option<Header>,
     pub file_indexes: Vec<FileIndex>,
 
     pub date_range: [SIDate; 2],
@@ -106,6 +106,10 @@ pub struct Data {
     order_currencies: Vec<i32>,
     order_drafts: Vec<i32>,
     order_stage_names: Vec<i32>,
+
+    // Helper stuff.
+    nhl_ids: Vec<i32>,
+    na_ids: Vec<i32>,
 }
 
 impl Data {
@@ -113,11 +117,69 @@ impl Data {
         let header = Header::read(cursor).unwrap();
         let file_indexes = read_file_indexes(cursor, &header);
         Self {
-            _header: Some(header),
+            header: Some(header),
             file_indexes,
 
             ..Default::default()
         }
+    }
+
+    // Replace the contents of this data with another.
+    pub fn update(&mut self, other: Data) {
+        self.header = other.header;
+        self.file_indexes = other.file_indexes;
+        self.date_range = other.date_range;
+        self.continents = other.continents;
+        self.officials = other.officials;
+        self.forenames = other.forenames;
+        self.surnames = other.surnames;
+        self.cities = other.cities;
+        self.clubs = other.clubs;
+        self.nat_clubs = other.nat_clubs;
+        self.staff_awards = other.staff_awards;
+        self.competitions = other.competitions;
+        self.nat_competitions = other.nat_competitions;
+        self.comp_history = other.comp_history;
+        self.nat_comp_history = other.nat_comp_history;
+        self.colours = other.colours;
+        self.nations = other.nations;
+        self.arenas = other.arenas;
+        self.staff = other.staff;
+        self.nonplayers = other.nonplayers;
+        self.players = other.players;
+        self.staff_preferences = other.staff_preferences;
+        self.retired_numbers = other.retired_numbers;
+        self.states_provinces = other.states_provinces;
+        self.injuries = other.injuries;
+        self.drafts = other.drafts;
+        self.stage_names = other.stage_names;
+        self.binaries = other.binaries;
+        self.order_continents = other.order_continents;
+        self.order_officials = other.order_officials;
+        self.order_forenames = other.order_forenames;
+        self.order_surnames = other.order_surnames;
+        self.order_cities = other.order_cities;
+        self.order_clubs = other.order_clubs;
+        self.order_nat_clubs = other.order_nat_clubs;
+        self.order_staff_awards = other.order_staff_awards;
+        self.order_competitions = other.order_competitions;
+        self.order_nat_competitions = other.order_nat_competitions;
+        self.order_comp_history = other.order_comp_history;
+        self.order_nat_comp_history = other.order_nat_comp_history;
+        self.order_colours = other.order_colours;
+        self.order_nations = other.order_nations;
+        self.order_arenas = other.order_arenas;
+        self.order_staff = other.order_staff;
+        self.order_players = other.order_players;
+        self.order_staff_preferences = other.order_staff_preferences;
+        self.order_retired_numbers = other.order_retired_numbers;
+        self.order_states_provinces = other.order_states_provinces;
+        self.order_injuries = other.order_injuries;
+        self.order_currencies = other.order_currencies;
+        self.order_drafts = other.order_drafts;
+        self.order_stage_names = other.order_stage_names;
+        self.nhl_ids = other.nhl_ids;
+        self.na_ids = other.na_ids;
     }
 
     // Get a save file of the data.
@@ -334,7 +396,7 @@ impl Data {
         }
 
         // Put the save file together.
-        let mut bin = self._header.as_ref().unwrap()._to_bytes();
+        let mut bin = self.header.as_ref().unwrap()._to_bytes();
         bin.append(
             &mut self
                 .file_indexes
@@ -377,6 +439,28 @@ impl Data {
             }
         }
     }
+
+    // Find the IDs of NHL and related competitions.
+    pub fn find_nhl_ids(&mut self) {
+        for comp in self.competitions.values() {
+            let name = comp.name();
+            if name.contains("National Hockey League")
+            || name.contains("American Hockey League") {
+                self.nhl_ids.push(comp.id);
+            }
+        }
+    }
+
+    // Find the IDs of North American countries.
+    pub fn find_na_ids(&mut self) {
+        for nation in self.nations.values() {
+            let name = nation.name();
+            if name == "United States" || name == "Canada" {
+                self.na_ids.push(nation.id);
+            }
+        }
+    }
+
 }
 
 #[derive(BinRead, PartialEq, Clone)]

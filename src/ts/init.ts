@@ -11,9 +11,16 @@ const HEADERS = [
     "Random",
     "Nation",
     "Second Nation",
+    "Birthday",
+    "Position",
+    "GK Rating",
+    "LD Rating",
+    "RD Rating",
+    "LW Rating",
+    "C Rating",
+    "RW Rating",
     "Club Contracted",
     "Club Playing",
-    "Birthday",
     "Adaptability",
     "Ambition",
     "Determination",
@@ -77,12 +84,20 @@ const HEADERS = [
 ];
 
 // Get the players from the database.
-export const fetchPlayers = async (nationId: number, nationalTeamCheck: boolean, countryChoiceCheck: boolean) => {
+export const fetchPlayers = async (nationId: number,
+    nationalTeamCheck: boolean,
+    countryChoiceCheck: boolean,
+    earliestBirthYear: number,
+    excludeNHL: boolean,
+    excludeNA: boolean) => {
     invoke("fetch_players", {
         "headers": HEADERS,
         "nationId": nationId,
         "nationalTeamCheck": nationalTeamCheck,
         "countryChoiceCheck": countryChoiceCheck,
+        "earliestBirthYear": earliestBirthYear,
+        "excludeNhl": excludeNHL,
+        "excludeNa": excludeNA,
     }).then((players) => {
         PLAYERS = players as Player[];
         initialisePaging();
@@ -97,6 +112,11 @@ const createPlayerView = async () => {
 
     const main = document.getElementsByTagName("main")[0];
     main.innerHTML = "";
+
+    const loadSaveButton = document.createElement("button");
+    loadSaveButton.textContent = "Load Save";
+    loadSaveButton.onclick = loadSave;
+    loadSaveButton.disabled = true; // Because replacing that info is a pain.
 
     const filtersButton = document.createElement("button");
     filtersButton.textContent = "Filters";
@@ -133,7 +153,7 @@ const createPlayerView = async () => {
     thead.appendChild(tr);
     table.append(thead, tbody);
 
-    main.append(inGameDate, filtersButton, prevButton, pageNumbers, nextButton, table);
+    main.append(loadSaveButton, inGameDate, filtersButton, prevButton, pageNumbers, nextButton, table);
     await createFilterLayer(main, filtersButton);
 
     createSortingScripts();
@@ -145,6 +165,16 @@ const getDisplayValue = (index: number, value: string | number): string => {
 
     if (headerName === "Birthday") {
         return daysToDateString(value as number);
+    }
+
+    if (headerName === "GK Rating"
+    || headerName === "LD Rating"
+    || headerName === "RD Rating"
+    || headerName === "LW Rating"
+    || headerName === "C Rating"
+    || headerName === "RW Rating") {
+        let num = value as number;
+        return `${(num * 100).toFixed(2)} %`;
     }
 
     return value.toString();
@@ -237,16 +267,16 @@ const createCell = (content: string | number): HTMLTableCellElement => {
 
 // Load a save.
 const loadSave = async () => {
-    await invoke("load_save");
+    let success = await invoke("load_save");
+    if (!success) { return; }
     await createPlayerView();
-    await fetchPlayers(-2, false, false);
+    await fetchPlayers(-2, false, false, 0, false, false);
 };
 
 // Add the onclick event for the Load Save button here.
 const enableLoadButton = () => {
     const button = document.getElementsByTagName("button")[0];
     button.onclick = loadSave;
-    button.disabled = false;
 };
 
 enableLoadButton();

@@ -24,7 +24,7 @@ pub struct Nation {
     _men_final_position_1: i8,
     _men_final_position_2: i8,
     _men_final_position_3: i8,
-    id: i32,
+    pub id: i32,
     _number_staff: i32,
     _continent_id: i32,
     _capital_id: i32,
