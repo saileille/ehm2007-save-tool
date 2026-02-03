@@ -33,5 +33,14 @@ Filter menu thingies.
     -ms-transform: translate(-50%, -50%);
     -o-transform: translate(-50%, -50%);
 
-    padding: 10px;
+    padding: 1em;
+}
+
+#filter-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+#earliest-birth-year {
+    width: 4em;
 }

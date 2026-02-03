@@ -5,42 +5,46 @@ import { fetchPlayers } from "./init";
 
 // Create the filter elements.
 export const createFilterLayer = async (main: HTMLElement, filtersButton: HTMLButtonElement) => {
-    const filterCanvas = document.createElement("div");
-    filterCanvas.id = "filter-canvas";
-    filterCanvas.style.display = "none";
+    const filterEffect = document.createElement("div");
+    filterEffect.id = "filter-canvas";
+    filterEffect.style.display = "none";
 
     const filterMenu = document.createElement("div");
     filterMenu.id = "filter-menu";
     filterMenu.style.display = "none";
 
+    const filterContainer = document.createElement("div");
+    filterContainer.id = "filter-container";
+
     filtersButton.onclick = () => {
-        filterCanvas.style.display = "";
+        filterEffect.style.display = "";
         filterMenu.style.display = "";
     };
 
-    await createNationFilter(filterMenu);
-    createCanPlayForCountryCheck(filterMenu);
-    createCanChooseCountryCheck(filterMenu);
-    createBirthYearFilter(filterMenu);
-    createNHLExclusion(filterMenu);
-    createNorthAmericaExclusion(filterMenu);
+    await createNationFilter(filterContainer);
+    createCanPlayForCountryCheck(filterContainer);
+    createCanChooseCountryCheck(filterContainer);
+    createBirthYearFilter(filterContainer);
+    createNHLExclusion(filterContainer);
+    createNorthAmericaExclusion(filterContainer);
 
     const applyFiltersButton = document.createElement("button");
     applyFiltersButton.textContent = "Apply";
     applyFiltersButton.onclick = () => {
         applyFilters();
         filterMenu.style.display = "none";
-        filterCanvas.style.display = "none";
+        filterEffect.style.display = "none";
     };
 
-    filterMenu.appendChild(applyFiltersButton);
-
-    main.append(filterMenu, filterCanvas);
+    filterMenu.append(filterContainer, applyFiltersButton);
+    main.append(filterMenu, filterEffect);
 };
 
 // Create the filter for nationality.
 const createNationFilter = async (filterMenu: HTMLDivElement) => {
     const nations: [number, string][] = await invoke("get_filter_data");
+
+    const div = document.createElement("div");
 
     const label = document.createElement("label");
     label.htmlFor = "nation";
@@ -55,11 +59,13 @@ const createNationFilter = async (filterMenu: HTMLDivElement) => {
         datalist.appendChild(option);
     }
 
-    filterMenu.append(label, datalist);
+    div.append(label, document.createElement("br"), datalist);
+    filterMenu.appendChild(div);
 };
 
 // Create the checkbox for national team eligibility.
 const createCanPlayForCountryCheck = (filterMenu: HTMLDivElement) => {
+    const div = document.createElement("div");
     const label = document.createElement("label");
     label.htmlFor = "can-play-for-country";
     label.textContent = "Can Play for the National Team";
@@ -68,11 +74,13 @@ const createCanPlayForCountryCheck = (filterMenu: HTMLDivElement) => {
     checkbox.type = "checkbox";
     checkbox.id = "can-play-for-country";
 
-    filterMenu.append(checkbox, label);
+    div.append(checkbox, label);
+    filterMenu.appendChild(div);
 };
 
 // Create the checkbox for filtering players who can play for two countries.
 const createCanChooseCountryCheck = (filterMenu: HTMLDivElement) => {
+    const div = document.createElement("div");
     const label = document.createElement("label");
     label.htmlFor = "can-choose-country";
     label.textContent = "Can Choose the National Team";
@@ -81,11 +89,13 @@ const createCanChooseCountryCheck = (filterMenu: HTMLDivElement) => {
     checkbox.type = "checkbox";
     checkbox.id = "can-choose-country";
 
-    filterMenu.append(checkbox, label);
+    div.append(checkbox, label);
+    filterMenu.appendChild(div);
 };
 
 // Create a filter for birth year.
 const createBirthYearFilter = (filterMenu: HTMLDivElement) => {
+    const div = document.createElement("div");
     const label = document.createElement("label");
     label.htmlFor = "earliest-birth-year";
     label.textContent = "Earliest Birth Year";
@@ -95,11 +105,13 @@ const createBirthYearFilter = (filterMenu: HTMLDivElement) => {
     input.id = "earliest-birth-year";
     input.value = "0";
 
-    filterMenu.append(label, input);
+    div.append(label, input);
+    filterMenu.appendChild(div);
 };
 
 // Create a filter for excluding NHL players.
 const createNHLExclusion = (filterMenu: HTMLDivElement) => {
+    const div = document.createElement("div");
     const label = document.createElement("label");
     label.htmlFor = "exclude-nhl";
     label.textContent = "Exclude NHL Players";
@@ -108,11 +120,13 @@ const createNHLExclusion = (filterMenu: HTMLDivElement) => {
     checkbox.type = "checkbox";
     checkbox.id = "exclude-nhl";
 
-    filterMenu.append(checkbox, label);
+    div.append(checkbox, label);
+    filterMenu.appendChild(div);
 };
 
 // Create a filter for excluding players playing in North America.
 const createNorthAmericaExclusion = (filterMenu: HTMLDivElement) => {
+    const div = document.createElement("div");
     const label = document.createElement("label");
     label.htmlFor = "exclude-na";
     label.textContent = "Exclude Players in North America";
@@ -121,7 +135,8 @@ const createNorthAmericaExclusion = (filterMenu: HTMLDivElement) => {
     checkbox.type = "checkbox";
     checkbox.id = "exclude-na";
 
-    filterMenu.append(checkbox, label);
+    div.append(checkbox, label);
+    filterMenu.appendChild(div);
 };
 
 // Apply the filters.

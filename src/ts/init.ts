@@ -13,7 +13,6 @@ type Player = {
 export let PLAYERS: Player[] = [];
 const HEADERS = [
     "Name",
-    "Staff ID",
     "Random",
     "Nation",
     "Second Nation",
