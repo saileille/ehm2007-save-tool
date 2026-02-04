@@ -179,6 +179,10 @@ const getDisplayValue = (index: number, value: string | number): string => {
     || headerName === "C Rating"
     || headerName === "RW Rating") {
         let num = value as number;
+        if (num === -1.0) {
+            return "";
+        }
+
         return `${(num * 100).toFixed(2)} %`;
     }
 

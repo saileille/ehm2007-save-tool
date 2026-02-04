@@ -61,6 +61,62 @@ lazy_static! {
 
         ..Default::default()
     };
+
+    pub static ref WORST: Player = Player {
+        current_ability: 1,
+        potential_ability: 1,
+        acceleration: 1,
+        aggression: 1,
+        agility: 1,
+        anticipation_raw: -128,
+        balance_raw: -128,
+        bravery: 1,
+        consistency: 1,
+        decisions_raw: -128,
+        dirtiness: 20,
+        flair: 1,
+        important_matches: 1,
+        injury_proneness: 20,
+        leadership: 1,
+        movement_raw: -128,
+        natural_fitness: 1,
+        one_on_ones_raw: -128,
+        pace: 1,
+        passing_raw: -128,
+        positioning_raw: -128,
+        reflexes_raw: -128,
+        stamina: 1,
+        strength: 1,
+        teamwork: 1,
+        versatility: 1,
+        vision_raw: -128,
+        work_rate: 1,
+        goaltender: 1,
+        left_defence: 1,
+        right_defence: 1,
+        left_wing: 1,
+        center: 1,
+        right_wing: 1,
+        agitation: 1,
+        blocker_raw: -128,
+        checking_raw: -128,
+        defensive_role: 1,
+        deflections_raw: -128,
+        deking_raw: -128,
+        faceoffs_raw: -128,
+        fighting_raw: -128,
+        glove_raw: -128,
+        hitting_raw: -128,
+        offensive_role: 1,
+        pokecheck_raw: -128,
+        rebounds_raw: -128,
+        recovery_raw: -128,
+        slapshot_raw: -128,
+        stickhandling_raw: -128,
+        wristshot_raw: -128,
+
+        ..Default::default()
+    };
 }
 
 #[derive(BinRead, Clone, Default)]
@@ -298,7 +354,7 @@ impl Player {
         let score = self.consistency + self.important_matches + self.work_rate - 3;
         let perfect_score = PERFECT.consistency + PERFECT.important_matches + PERFECT.work_rate - 3;
 
-        return rating::cap(score as f64 / perfect_score as f64, 0.5);
+        return rating::minimum(score as f64 / perfect_score as f64, 0.5);
     }
 
     // Get a position rating for the player.
@@ -314,6 +370,6 @@ impl Player {
         let score = position + self.versatility - 2;
         let perfect_score = PERFECT.goaltender + PERFECT.versatility - 2;
 
-        return rating::cap(score as f64 / perfect_score as f64, 0.5);
+        return rating::minimum(score as f64 / perfect_score as f64, 0.5);
     }
 }

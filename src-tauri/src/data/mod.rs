@@ -110,6 +110,18 @@ pub struct Data {
     // Helper stuff.
     nhl_ids: Vec<i32>,
     na_ids: Vec<i32>,
+
+    // The best positional ratings in the database.
+    pub best_gk: f64,
+    pub best_d: f64,
+    pub best_w: f64,
+    pub best_c: f64,
+
+    // The worst positional ratings in the database.
+    pub worst_gk: f64,
+    pub worst_d: f64,
+    pub worst_w: f64,
+    pub worst_c: f64,
 }
 
 impl Data {
@@ -120,6 +132,16 @@ impl Data {
         let data = Self {
             _header: Some(header),
             file_indexes,
+
+            best_gk: f64::MIN,
+            best_d: f64::MIN,
+            best_w: f64::MIN,
+            best_c: f64::MIN,
+
+            worst_gk: f64::MAX,
+            worst_d: f64::MAX,
+            worst_w: f64::MAX,
+            worst_c: f64::MAX,
 
             ..Default::default()
         };
@@ -461,6 +483,45 @@ impl Data {
             if name == "United States" || name == "Canada" {
                 self.na_ids.push(nation.id);
             }
+        }
+    }
+
+    // Calculate the best and the worst player ratings the save file has.
+    pub fn calculate_rating_boundaries(&mut self) {
+        for person in self.staff.values() {
+            let p = person.player_data(&self);
+            if p.is_none() { continue; }
+            let p = p.unwrap();
+
+            if p.is_goalie() {
+                let gk = person.gk_rating(&p);
+                if gk > self.best_gk { self.best_gk = gk; }
+                if gk < self.worst_gk { self.worst_gk = gk; }
+            }
+            else {
+                let ld = person.ld_rating(&p);
+                let rd = person.rd_rating(&p);
+                let lw = person.lw_rating(&p);
+                let c = person.c_rating(&p);
+                let rw = person.rw_rating(&p);
+
+                if ld > self.best_d { self.best_d = ld; }
+                if ld < self.worst_d { self.worst_d = ld; }
+
+                if rd > self.best_d { self.best_d = rd; }
+                if rd < self.worst_d { self.worst_d = rd; }
+
+                if lw > self.best_w { self.best_w = lw; }
+                if lw < self.worst_w { self.worst_w = lw; }
+
+                if c > self.best_c { self.best_c = c; }
+                if c < self.worst_c { self.worst_c = c; }
+
+                if rw > self.best_w { self.best_w = rw; }
+                if rw < self.worst_w { self.worst_w = rw; }
+            }
+
+
         }
     }
 

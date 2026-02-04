@@ -110,6 +110,7 @@ pub fn load_save(mut file: File) -> Data {
     data.calculate_ingame_date();
     data.find_nhl_ids();
     data.find_na_ids();
+    data.calculate_rating_boundaries();
 
     // data.create_character_csv();
     return data;

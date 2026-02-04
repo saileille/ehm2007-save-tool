@@ -21,6 +21,7 @@ Filter menu thingies.
     left: 50%;
     background: blue;
 
+    padding: 1em;
     border-radius: 1em;
     -webkit-border-radius: 1em;
     -moz-border-radius: 1em;
@@ -33,7 +34,6 @@ Filter menu thingies.
     -ms-transform: translate(-50%, -50%);
     -o-transform: translate(-50%, -50%);
 
-    padding: 1em;
 }
 
 #filter-container {
