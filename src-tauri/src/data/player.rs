@@ -1,123 +1,8 @@
 use std::{collections::HashMap, io::Cursor};
-use lazy_static::lazy_static;
 use binread::{BinRead, Error};
 
 
 use crate::{data::{Data, convert_attribute}, rating};
-
-lazy_static! {
-    pub static ref PERFECT: Player = Player {
-        current_ability: 200,
-        potential_ability: 200,
-        acceleration: 20,
-        aggression: 20,
-        agility: 20,
-        anticipation_raw: 127,
-        balance_raw: 127,
-        bravery: 20,
-        consistency: 20,
-        decisions_raw: 127,
-        dirtiness: 1,
-        flair: 20,
-        important_matches: 20,
-        injury_proneness: 1,
-        leadership: 20,
-        movement_raw: 127,
-        natural_fitness: 20,
-        one_on_ones_raw: 127,
-        pace: 20,
-        passing_raw: 127,
-        positioning_raw: 127,
-        reflexes_raw: 127,
-        stamina: 20,
-        strength: 20,
-        teamwork: 20,
-        versatility: 20,
-        vision_raw: 127,
-        work_rate: 20,
-        goaltender: 20,
-        left_defence: 20,
-        right_defence: 20,
-        left_wing: 20,
-        center: 20,
-        right_wing: 20,
-        agitation: 20,
-        blocker_raw: 127,
-        checking_raw: 127,
-        defensive_role: 20,
-        deflections_raw: 127,
-        deking_raw: 127,
-        faceoffs_raw: 127,
-        fighting_raw: 127,
-        glove_raw: 127,
-        hitting_raw: 127,
-        offensive_role: 20,
-        pokecheck_raw: 127,
-        rebounds_raw: 127,
-        recovery_raw: 127,
-        slapshot_raw: 127,
-        stickhandling_raw: 127,
-        wristshot_raw: 127,
-
-        ..Default::default()
-    };
-
-    pub static ref WORST: Player = Player {
-        current_ability: 1,
-        potential_ability: 1,
-        acceleration: 1,
-        aggression: 1,
-        agility: 1,
-        anticipation_raw: -128,
-        balance_raw: -128,
-        bravery: 1,
-        consistency: 1,
-        decisions_raw: -128,
-        dirtiness: 20,
-        flair: 1,
-        important_matches: 1,
-        injury_proneness: 20,
-        leadership: 1,
-        movement_raw: -128,
-        natural_fitness: 1,
-        one_on_ones_raw: -128,
-        pace: 1,
-        passing_raw: -128,
-        positioning_raw: -128,
-        reflexes_raw: -128,
-        stamina: 1,
-        strength: 1,
-        teamwork: 1,
-        versatility: 1,
-        vision_raw: -128,
-        work_rate: 1,
-        goaltender: 1,
-        left_defence: 1,
-        right_defence: 1,
-        left_wing: 1,
-        center: 1,
-        right_wing: 1,
-        agitation: 1,
-        blocker_raw: -128,
-        checking_raw: -128,
-        defensive_role: 1,
-        deflections_raw: -128,
-        deking_raw: -128,
-        faceoffs_raw: -128,
-        fighting_raw: -128,
-        glove_raw: -128,
-        hitting_raw: -128,
-        offensive_role: 1,
-        pokecheck_raw: -128,
-        rebounds_raw: -128,
-        recovery_raw: -128,
-        slapshot_raw: -128,
-        stickhandling_raw: -128,
-        wristshot_raw: -128,
-
-        ..Default::default()
-    };
-}
 
 #[derive(BinRead, Clone, Default)]
 #[br(little)]
@@ -349,12 +234,23 @@ impl Player {
         return convert_attribute(self.current_ability, attribute);
     }
 
-    // Get a 'consistency rating' for the player.
-    pub fn consistency_rating(&self) -> f64 {
-        let score = self.consistency + self.important_matches + self.work_rate - 3;
-        let perfect_score = PERFECT.consistency + PERFECT.important_matches + PERFECT.work_rate - 3;
+    // Get the rating of a player.
+    pub fn rating(&self, data: &Data, score: usize, low: usize, high: usize) -> f64 {
+        let ca = self.current_ability as usize;
 
-        return rating::minimum(score as f64 / perfect_score as f64, 0.5);
+        let attribute_rating = rating::stretch(score, low, high);
+        let ca_rating = rating::stretch(ca, data.worst_ca as usize, data.best_ca as usize);
+
+        let combined_rating = (attribute_rating + ca_rating) / 2.0;
+        return rating::restrict_minimum(combined_rating * self.consistency_rating(), 0.01);
+    }
+
+    // Get a 'consistency rating' for the player.
+    fn consistency_rating(&self) -> f64 {
+        let score = self.consistency + self.important_matches + self.work_rate - 3;
+        let perfect_score = (20 + 20 + 20 - 3) as f64;
+
+        return rating::restrict_minimum(score as f64 / perfect_score, 0.5);
     }
 
     // Get a position rating for the player.
@@ -368,8 +264,8 @@ impl Player {
         }
 
         let score = position + self.versatility - 2;
-        let perfect_score = PERFECT.goaltender + PERFECT.versatility - 2;
+        let perfect_score = (20 + 20 - 2) as f64;
 
-        return rating::minimum(score as f64 / perfect_score as f64, 0.5);
+        return rating::restrict_minimum(score as f64 / perfect_score, 0.5);
     }
 }

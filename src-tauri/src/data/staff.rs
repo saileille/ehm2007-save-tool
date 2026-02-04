@@ -3,39 +3,10 @@ use std::{collections::HashMap, io::Cursor, str::Utf8Error};
 use binread::{BinRead, Error};
 use regex::Regex;
 use tauri::webview::cookie::time::util::is_leap_year;
-use lazy_static::lazy_static;
 
 use crate::{
-    chars::_bytes_to_string_debug, data::{Data, SIDate, city::City, club::Club, name::Name, nation::Nation, player::{self, Player}}, rating::stretch, research::db, views
+    chars::_bytes_to_string_debug, data::{Data, SIDate, city::City, club::Club, name::Name, nation::Nation, player::Player}, research::db, views
 };
-
-lazy_static! {
-    pub static ref PERFECT: Staff = Staff {
-        adaptability: 20,
-        ambition: 20,
-        determination: 20,
-        loyalty: 20,
-        pressure: 20,
-        professionalism: 20,
-        sportsmanship: 20,
-        temperament: 20,
-
-        ..Default::default()
-    };
-
-    pub static ref WORST: Staff = Staff {
-        adaptability: 1,
-        ambition: 1,
-        determination: 1,
-        loyalty: 1,
-        pressure: 1,
-        professionalism: 1,
-        sportsmanship: 1,
-        temperament: 1,
-
-        ..Default::default()
-    };
-}
 
 #[derive(BinRead, Clone, Default)]
 #[br(little)]
@@ -460,7 +431,7 @@ impl Staff {
     }
 
     // Get the person's 'score' as a goalkeeper.
-    fn gk_attribute_score(&self, p: &Player) -> usize {
+    pub fn gk_attribute_score(&self, p: &Player) -> usize {
         let x30 = p.agility as usize + p.bravery as usize + self.determination as usize + p.convert_attribute("Glove") as usize
         + p.convert_attribute("Recovery") as usize + p.convert_attribute("Reflexes") as usize;
 
@@ -480,7 +451,7 @@ impl Staff {
     }
 
     // Get the person's 'score' as a defender.
-    fn d_attribute_score(&self, p: &Player) -> usize {
+    pub fn d_attribute_score(&self, p: &Player) -> usize {
         let x30 = p.acceleration as usize + p.convert_attribute("Anticipation") as usize + p.bravery as usize
         + p.convert_attribute("Checking") as usize + self.determination as usize + p.convert_attribute("Hitting") as usize
         + p.convert_attribute("Passing") as usize + p.convert_attribute("Pokecheck") as usize
@@ -501,7 +472,7 @@ impl Staff {
     }
 
     // Get the person's 'score' as a winger.
-    fn w_attribute_score(&self, p: &Player) -> usize {
+    pub fn w_attribute_score(&self, p: &Player) -> usize {
         let x30 = p.acceleration as usize + p.agility as usize + p.convert_attribute("Anticipation") as usize
         + self.determination as usize + p.convert_attribute("Passing") as usize + self.pressure as usize + p.pace as usize
         + p.convert_attribute("Stickhandling") as usize + p.convert_attribute("Wristshot") as usize;
@@ -521,7 +492,7 @@ impl Staff {
     }
 
     // Get the person's 'score' as a centre forward.
-    fn c_attribute_score(&self, p: &Player) -> usize {
+    pub fn c_attribute_score(&self, p: &Player) -> usize {
         let x30 = p.acceleration as usize + p.convert_attribute("Anticipation") as usize
         + p.convert_attribute("Creativity") as usize + self.determination as usize + p.convert_attribute("Faceoffs") as usize
         + p.convert_attribute("Passing") as usize + self.pressure as usize + p.pace as usize
@@ -543,143 +514,77 @@ impl Staff {
     }
 
     // Get the person's ability as a goalkeeper.
-    pub fn gk_rating(&self, p: &Player) -> f64 {
-        let perfect_player = &player::PERFECT;
-
-        let worst_score = WORST.gk_attribute_score(&player::WORST);
-        let attribute_score = self.gk_attribute_score(&p) - worst_score;
-        let perfect_score = PERFECT.gk_attribute_score(perfect_player) - worst_score;
-
-        let attribute_rating = attribute_score as f64 / perfect_score as f64;
-        let ca_rating = (p.current_ability - 1) as f64 / (perfect_player.current_ability - 1) as f64;
-
-        let combined_rating = (attribute_rating + ca_rating) / 2.0;
-        return combined_rating * p.consistency_rating();
-    }
-
-    // Get the person's ability as a defender.
-    fn d_rating(&self, p: &Player) -> f64 {
-        let perfect_player = &player::PERFECT;
-
-        let worst_score = WORST.d_attribute_score(&player::WORST);
-        let attribute_score = self.d_attribute_score(p) - worst_score;
-        let perfect_score = PERFECT.d_attribute_score(perfect_player) - worst_score;
-
-        let attribute_rating = attribute_score as f64 / perfect_score as f64;
-        let ca_rating = (p.current_ability - 1) as f64 / (perfect_player.current_ability - 1) as f64;
-
-        let combined_rating = (attribute_rating + ca_rating) / 2.0;
-        return combined_rating * p.consistency_rating();
-    }
-
-    // Get the person's ability as a winger.
-    fn w_rating(&self, p: &Player) -> f64 {
-        let perfect_player = &player::PERFECT;
-
-        let worst_score = WORST.w_attribute_score(&player::WORST);
-        let attribute_score = self.w_attribute_score(p) - worst_score;
-        let perfect_score = PERFECT.w_attribute_score(perfect_player) - worst_score;
-
-        let attribute_rating = attribute_score as f64 / perfect_score as f64;
-        let ca_rating = (p.current_ability - 1) as f64 / (perfect_player.current_ability - 1) as f64;
-
-        let combined_rating = (attribute_rating + ca_rating) / 2.0;
-        return combined_rating * p.consistency_rating();
-    }
-
-    // Get the person's ability as a centre forward.
-    pub fn c_rating(&self, p: &Player) -> f64 {
-        let perfect_player = &player::PERFECT;
-
-        let worst_score = WORST.c_attribute_score(&player::WORST);
-        let attribute_score = self.c_attribute_score(&p) - worst_score;
-        let perfect_score = PERFECT.c_attribute_score(perfect_player) - worst_score;
-
-        let attribute_rating = attribute_score as f64 / perfect_score as f64;
-        let ca_rating = (p.current_ability - 1) as f64 / (perfect_player.current_ability - 1) as f64;
-
-        let combined_rating = (attribute_rating + ca_rating) / 2.0;
-        return combined_rating * p.consistency_rating() * p.position_rating(p.center);
-    }
-
-    // Get the person's ability as a left defender.
-    pub fn ld_rating(&self, p: &Player) -> f64 {
-        return self.d_rating(&p) * p.position_rating(p.left_defence);
-    }
-
-    // Get the person's ability as a right defender.
-    pub fn rd_rating(&self, p: &Player) -> f64 {
-        return self.d_rating(&p) * p.position_rating(p.right_defence);
-    }
-
-    // Get the person's ability as a left winger.
-    pub fn lw_rating(&self, p: &Player) -> f64 {
-        return self.w_rating(&p) * p.position_rating(p.left_wing);
-    }
-
-    // Get the person's ability as a right winger.
-    pub fn rw_rating(&self, p: &Player) -> f64 {
-        return self.w_rating(&p) * p.position_rating(p.right_wing);
-    }
-
-    pub fn relative_gk_rating(&self, data: &Data) -> f64 {
+    pub fn gk_rating(&self, data: &Data) -> f64 {
         let p = self.player_data(data).unwrap();
         if !p.is_goalie() {
             return -1.0;
         }
 
-        let rating = self.gk_rating(&p);
-        return stretch(rating, data.worst_gk, data.best_gk);
+        let score = self.gk_attribute_score(&p);
+        return p.rating(data, score, data.worst_gk, data.best_gk);
     }
 
-    pub fn relative_ld_rating(&self, data: &Data) -> f64 {
+    // Get the person's ability as a defender.
+    fn d_rating(&self, data: &Data, p: &Player) -> f64 {
+        let score = self.d_attribute_score(&p);
+        return p.rating(data, score, data.worst_d, data.best_d);
+    }
+
+    // Get the person's ability as a winger.
+    fn w_rating(&self, data: &Data, p: &Player) -> f64 {
+        let score = self.w_attribute_score(&p);
+        return p.rating(data, score, data.worst_w, data.best_w);
+    }
+
+    // Get the person's ability as a centre forward.
+    pub fn c_rating(&self, data: &Data) -> f64 {
         let p = self.player_data(data).unwrap();
         if p.is_goalie() {
             return -1.0;
         }
 
-        let rating = self.ld_rating(&p);
-        return stretch(rating, data.worst_d, data.best_d);
+        let score = self.c_attribute_score(&p);
+        return p.rating(data, score,data.worst_c, data.best_c) * p.position_rating(p.center);
     }
 
-    pub fn relative_rd_rating(&self, data: &Data) -> f64 {
+    // Get the person's ability as a left defender.
+    pub fn ld_rating(&self, data: &Data) -> f64 {
         let p = self.player_data(data).unwrap();
         if p.is_goalie() {
             return -1.0;
         }
 
-        let rating = self.rd_rating(&p);
-        return stretch(rating, data.worst_d, data.best_d);
+        return self.d_rating(data, &p) * p.position_rating(p.left_defence);
     }
 
-    pub fn relative_lw_rating(&self, data: &Data) -> f64 {
+    // Get the person's ability as a right defender.
+    pub fn rd_rating(&self, data: &Data) -> f64 {
         let p = self.player_data(data).unwrap();
         if p.is_goalie() {
             return -1.0;
         }
 
-        let rating = self.lw_rating(&p);
-        return stretch(rating, data.worst_w, data.best_w);
+        return self.d_rating(data, &p) * p.position_rating(p.right_defence);
     }
 
-    pub fn relative_c_rating(&self, data: &Data) -> f64 {
+    // Get the person's ability as a left winger.
+    pub fn lw_rating(&self, data: &Data) -> f64 {
         let p = self.player_data(data).unwrap();
         if p.is_goalie() {
             return -1.0;
         }
 
-        let rating = self.c_rating(&p);
-        return stretch(rating, data.worst_c, data.best_c);
+        return self.w_rating(data, &p) * p.position_rating(p.left_wing);
     }
 
-    pub fn relative_rw_rating(&self, data: &Data) -> f64 {
+    // Get the person's ability as a right winger.
+    pub fn rw_rating(&self, data: &Data) -> f64 {
         let p = self.player_data(data).unwrap();
         if p.is_goalie() {
             return -1.0;
         }
 
-        let rating = self.rw_rating(&p);
-        return stretch(rating, data.worst_w, data.best_w);
+        return self.w_rating(data, &p) * p.position_rating(p.right_wing);
     }
 
     pub fn _merge_players(

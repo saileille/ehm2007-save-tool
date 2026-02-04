@@ -111,17 +111,19 @@ pub struct Data {
     nhl_ids: Vec<i32>,
     na_ids: Vec<i32>,
 
-    // The best positional ratings in the database.
-    pub best_gk: f64,
-    pub best_d: f64,
-    pub best_w: f64,
-    pub best_c: f64,
+    // The best attribute scores in the database.
+    pub best_gk: usize,
+    pub best_d: usize,
+    pub best_w: usize,
+    pub best_c: usize,
+    pub best_ca: i16,
 
-    // The worst positional ratings in the database.
-    pub worst_gk: f64,
-    pub worst_d: f64,
-    pub worst_w: f64,
-    pub worst_c: f64,
+    // The worst attribute in the database.
+    pub worst_gk: usize,
+    pub worst_d: usize,
+    pub worst_w: usize,
+    pub worst_c: usize,
+    pub worst_ca: i16,
 }
 
 impl Data {
@@ -133,15 +135,17 @@ impl Data {
             _header: Some(header),
             file_indexes,
 
-            best_gk: f64::MIN,
-            best_d: f64::MIN,
-            best_w: f64::MIN,
-            best_c: f64::MIN,
+            best_gk: usize::MIN,
+            best_d: usize::MIN,
+            best_w: usize::MIN,
+            best_c: usize::MIN,
+            best_ca: i16::MIN,
 
-            worst_gk: f64::MAX,
-            worst_d: f64::MAX,
-            worst_w: f64::MAX,
-            worst_c: f64::MAX,
+            worst_gk: usize::MAX,
+            worst_d: usize::MAX,
+            worst_w: usize::MAX,
+            worst_c: usize::MAX,
+            worst_ca: i16::MAX,
 
             ..Default::default()
         };
@@ -493,32 +497,27 @@ impl Data {
             if p.is_none() { continue; }
             let p = p.unwrap();
 
+            if p.current_ability > self.best_ca { self.best_ca = p.current_ability }
+            if p.current_ability < self.worst_ca { self.worst_ca = p.current_ability }
+
             if p.is_goalie() {
-                let gk = person.gk_rating(&p);
+                let gk = person.gk_attribute_score(&p);
                 if gk > self.best_gk { self.best_gk = gk; }
                 if gk < self.worst_gk { self.worst_gk = gk; }
             }
             else {
-                let ld = person.ld_rating(&p);
-                let rd = person.rd_rating(&p);
-                let lw = person.lw_rating(&p);
-                let c = person.c_rating(&p);
-                let rw = person.rw_rating(&p);
+                let d = person.d_attribute_score(&p);
+                let w = person.w_attribute_score(&p);
+                let c = person.c_attribute_score(&p);
 
-                if ld > self.best_d { self.best_d = ld; }
-                if ld < self.worst_d { self.worst_d = ld; }
+                if d > self.best_d { self.best_d = d; }
+                if d < self.worst_d { self.worst_d = d; }
 
-                if rd > self.best_d { self.best_d = rd; }
-                if rd < self.worst_d { self.worst_d = rd; }
-
-                if lw > self.best_w { self.best_w = lw; }
-                if lw < self.worst_w { self.worst_w = lw; }
+                if w > self.best_w { self.best_w = w; }
+                if w < self.worst_w { self.worst_w = w; }
 
                 if c > self.best_c { self.best_c = c; }
                 if c < self.worst_c { self.worst_c = c; }
-
-                if rw > self.best_w { self.best_w = rw; }
-                if rw < self.worst_w { self.worst_w = rw; }
             }
 
 

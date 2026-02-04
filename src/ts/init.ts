@@ -183,7 +183,7 @@ const getDisplayValue = (index: number, value: string | number): string => {
             return "";
         }
 
-        return `${(num * 100).toFixed(2)} %`;
+        return `${(num * 100).toFixed(2)}`;
     }
 
     return value.toString();
@@ -250,11 +250,24 @@ const sortTable = (n: number) => {
         if (columnName === "Name") {
             sortName(sortAscending);
         }
+
         else if (columnName === "Position") {
             sortPosition(sortAscending);
         }
+
+        else if (
+            columnName === "GK Rating" ||
+            columnName === "LD Rating" ||
+            columnName === "RD Rating" ||
+            columnName === "LW Rating" ||
+            columnName === "C Rating" ||
+            columnName === "RW Rating"
+        ) {
+            sortGeneric(sortAscending, n, -1.0);
+        }
+
         else {
-            sortGeneric(sortAscending, n);
+            sortGeneric(sortAscending, n, "");
         }
 
         // Check if anything changed.
@@ -321,17 +334,31 @@ const sortPosition = (sortAscending: number) => {
 };
 
 // The generic sorting.
-const sortGeneric = (sortAscending: number, n: number) => {
+const sortGeneric = (sortAscending: number, n: number, emptyColumn: string | number) => {
     PLAYERS.sort((a, b) => {
-        if (a.columns[n] < b.columns[n]) {
+        const aCol = a.columns[n];
+        const bCol = b.columns[n];
+
+        if (aCol === bCol) {
+            return 0;
+        }
+
+        // Make the empty columns always show up last.
+        if (aCol === emptyColumn) {
+            return 1;
+        }
+
+        if (bCol === emptyColumn) {
+            return -1;
+        }
+
+        if (aCol < bCol) {
             return -1 * sortAscending;
         }
 
-        if (b.columns[n] < a.columns[n]) {
+        // if (bCol < aCol) {
             return 1 * sortAscending;
-        }
-
-        return 0;
+        // }
     });
 }
 
