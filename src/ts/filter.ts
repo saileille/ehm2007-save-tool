@@ -30,10 +30,13 @@ export const createFilterLayer = async (main: HTMLElement, filtersButton: HTMLBu
 
     const applyFiltersButton = document.createElement("button");
     applyFiltersButton.textContent = "Apply";
-    applyFiltersButton.onclick = () => {
-        applyFilters();
-        filterMenu.style.display = "none";
-        filterEffect.style.display = "none";
+    applyFiltersButton.onclick = onApplyFiltersButtonClick;
+
+    // Bind filter-apply to the enter key.
+    onkeyup = (e) => {
+        if (e.code === "Enter" && filterMenu.style.display !== "none") {
+            onApplyFiltersButtonClick();
+        }
     };
 
     filterMenu.append(filterContainer, applyFiltersButton);
@@ -140,7 +143,7 @@ const createNorthAmericaExclusion = (filterMenu: HTMLDivElement) => {
 };
 
 // Apply the filters.
-const applyFilters = async () => {
+export const applyFilters = async () => {
     const nationId = Number((document.getElementById("nation") as HTMLSelectElement).value);
     const nationalTeamCheck = (document.getElementById("can-play-for-country") as HTMLInputElement).checked;
     const countryChoiceCheck = (document.getElementById("can-choose-country") as HTMLInputElement).checked;
@@ -149,3 +152,12 @@ const applyFilters = async () => {
     const excludeNA = (document.getElementById("exclude-na") as HTMLInputElement).checked;
     await fetchPlayers(nationId, nationalTeamCheck, countryChoiceCheck, earliestBirthYear, excludeNHL, excludeNA);
 }
+
+const onApplyFiltersButtonClick = () => {
+    applyFilters();
+    const filterMenu = document.getElementById("filter-menu") as HTMLDivElement;
+    const filterEffect = document.getElementById("filter-canvas") as HTMLDivElement;
+
+    filterMenu.style.display = "none";
+    filterEffect.style.display = "none";
+};

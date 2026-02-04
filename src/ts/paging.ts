@@ -1,5 +1,6 @@
 // Paging-related code.
-import { overwriteTable, PLAYERS } from "./init";
+import { PLAYERS } from "./init";
+import { overwriteTable } from "./table";
 
 export let PAGE = 0;
 export const ROWS_PER_PAGE = 50;
