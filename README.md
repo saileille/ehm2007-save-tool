@@ -1,7 +1,3 @@
-# Tauri + Vanilla TS
+This is a tool for viewing player data in NHL Eastside Hockey Manager 2007 saves.
 
-This template should help get you started developing with Tauri in vanilla HTML, CSS and Typescript.
-
-## Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+There are two files in the release. One is an installer, and the other is an executable. I do not know if the executable works as standalone. If it does, great. If it does not, download the installer and get the executable that way.
