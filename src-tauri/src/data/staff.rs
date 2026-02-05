@@ -429,10 +429,12 @@ impl Staff {
         };
 
         min.add_years(self.age);
-
         let mut max = min.clone();
         max.add_years(1);
-        max.add_days(-1);
+
+        if !max.is_leap_year() || self.date_of_birth.day < 365 {
+            max.add_days(-1);
+        }
 
         return (min, max);
     }
