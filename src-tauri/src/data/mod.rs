@@ -426,8 +426,7 @@ impl Data {
     pub fn find_nhl_ids(&mut self) {
         for comp in self.competitions.values() {
             let name = comp.name();
-            if name.contains("National Hockey League")
-            || name.contains("American Hockey League") {
+            if name.contains("National Hockey League") {
                 self.nhl_ids.push(comp.id);
             }
         }

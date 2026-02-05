@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ehm-save-viewer",
-  "version": "0.1.0",
-  "identifier": "com.ehm-save-viewer.app",
+  "productName": "EHM 2007 Save Viewer",
+  "version": "1.0.0",
+  "identifier": "com.ehm-save-viewer.yey",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -13,9 +13,8 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "ehm-save-viewer",
-        "width": 800,
-        "height": 600
+        "title": "EHM 2007 Save Viewer",
+        "maximized": true
       }
     ],
     "security": {

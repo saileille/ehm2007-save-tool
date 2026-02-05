@@ -255,7 +255,7 @@ impl Staff {
         };
     }
 
-    pub fn _club_contracted(&self, data: &Data) -> Option<Club> {
+    pub fn club_contracted(&self, data: &Data) -> Option<Club> {
         return data.clubs.get(&self.club_contracted_id).cloned();
     }
 
@@ -273,7 +273,7 @@ impl Staff {
         };
     }
 
-    pub fn club_playing(&self, data: &Data) -> Option<Club> {
+    pub fn _club_playing(&self, data: &Data) -> Option<Club> {
         return data.clubs.get(&self.club_playing_id).cloned();
     }
 
@@ -334,19 +334,18 @@ impl Staff {
             return true;
         }
 
-        let club_playing = self.club_playing(data);
-        if club_playing.is_none() {
+        let club = self.club_contracted(data);
+        if club.is_none() {
             return true;
         }
 
-        let club_playing = club_playing.unwrap();
-
-        if exclude_na && data.na_ids.contains(&club_playing.nation_id) {
+        let club = club.unwrap();
+        if exclude_na && data.na_ids.contains(&club.nation_id) {
             return false;
         }
 
         if exclude_nhl {
-            return !data.nhl_ids.contains(&club_playing.division_id);
+            return !data.nhl_ids.contains(&club.division_id);
         }
 
         return true;
