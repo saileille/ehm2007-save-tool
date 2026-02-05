@@ -2,10 +2,9 @@ use std::{collections::HashMap, io::Cursor, str::Utf8Error};
 
 use binread::{BinRead, Error};
 use regex::Regex;
-use tauri::webview::cookie::time::util::is_leap_year;
 
 use crate::{
-    chars::_bytes_to_string_debug, data::{Data, SIDate, city::City, club::Club, name::Name, nation::Nation, player::Player}, research::db, views
+    chars::bytes_to_string_debug, data::{Data, SIDate, city::City, club::Club, name::Name, nation::Nation, player::Player}, research::db, views
 };
 
 #[derive(BinRead, Clone, Default)]
@@ -116,11 +115,45 @@ impl Staff {
     }
 
     pub fn forename(&self, data: &Data) -> String {
-        return data.forenames.get(&self.forename_id).unwrap().name().unwrap();
+        let name = match data.forenames.get(&self.forename_id).unwrap().name() {
+            Ok(s) => s,
+            Err(e) => {
+                let bytes = &data.forenames.get(&self.forename_id).unwrap().b_name;
+                let s = bytes_to_string_debug(bytes);
+                panic!(
+                    "{e}\nbytes: {:?}\nstring: {}\nname: {} {}\nbirthyear: {}\nbirthplace: {}\nclub: {}",
+                    bytes,
+                    s,
+                    s,
+                    self.surname(data),
+                    self.date_of_birth.year,
+                    self.birthplace(data),
+                    self.club_contracted_name(data).unwrap(),
+                );
+            }
+        };
+        return name;
     }
 
     pub fn surname(&self, data: &Data) -> String {
-        return data.surnames.get(&self.surname_id).unwrap().name().unwrap();
+        let name = match data.surnames.get(&self.surname_id).unwrap().name() {
+            Ok(s) => s,
+            Err(e) => {
+                let bytes = &data.surnames.get(&self.surname_id).unwrap().b_name;
+                let s = bytes_to_string_debug(bytes);
+                panic!(
+                    "{e}\nbytes: {:?}\nstring: {}\nname: {} {}\nbirthyear: {}\nbirthplace: {}\nclub: {}",
+                    bytes,
+                    s,
+                    self.forename(data),
+                    s,
+                    self.date_of_birth.year,
+                    self.birthplace(data),
+                    self.club_contracted_name(data).unwrap(),
+                );
+            }
+        };
+        return name;
     }
 
     pub fn _forename_object(&self, data: &Data) -> Name {
@@ -135,19 +168,19 @@ impl Staff {
         return data.cities.get(&self._birth_town_id).cloned();
     }
 
-    pub fn _birthplace(&self, data: &Data) -> String {
+    pub fn birthplace(&self, data: &Data) -> String {
         let town = self._birth_town(data);
         if town.is_none() {
             return String::new();
         }
         let town = town.unwrap();
 
-        let state_string = match town._state_abbreviation(data) {
+        let state_string = match town.state_abbreviation(data) {
             Some(s) => format!(", {s}"),
             None => String::new(),
         };
 
-        let nation_string = match town._nation_three_letter_name(data) {
+        let nation_string = match town.nation_three_letter_name(data) {
             Some(s) => format!(", {s}"),
             None => String::new(),
         };
@@ -155,8 +188,8 @@ impl Staff {
         let town_name = match town._name() {
             Ok(s) => s,
             Err(e) => {
-                let s = _bytes_to_string_debug(&town._b_name);
-                println!(
+                let s = bytes_to_string_debug(&town._b_name);
+                panic!(
                     "{e}\nbytes: {:?}\nstring: {}\nname: {} {}\nbirth year: {}\nnationality: {}\nclub: {}",
                     town._b_name,
                     s,
@@ -166,7 +199,6 @@ impl Staff {
                     self.nation_name(data),
                     self.club_contracted_name(data).unwrap(),
                 );
-                s
             }
         };
 
@@ -390,42 +422,18 @@ impl Staff {
     }
 
     // Get the dates when the person has the current age.
-    // Note: Person's age changes only the day AFTER their birthday.
     pub fn dates_with_this_age(&self) -> (SIDate, SIDate) {
-        let mut min_day = self.date_of_birth.day;
-        let min_year = self.age + self.date_of_birth.year;
-        let birth_year_is_leap = is_leap_year(self.date_of_birth.year as i32);
-        let min_year_is_leap = is_leap_year(min_year as i32);
-
-        // Align the min date as close to the birthday as possible.
-        if birth_year_is_leap && !min_year_is_leap && min_day >= SIDate::LEAP_DAY {
-            min_day -= 1;
-        }
-        else if !birth_year_is_leap && min_year_is_leap && min_day >= SIDate::LEAP_DAY {
-            min_day += 1;
-        }
-
         let mut min = SIDate {
-            day: min_day,
-            year: min_year,
+            day: self.date_of_birth.day,
+            year: self.date_of_birth.year,
             b_is_leap_year: 0,
         };
 
-        // The min date is one day after the birthday.
-        min.add_days(1);
+        min.add_years(self.age);
 
         let mut max = min.clone();
-
-        let min_is_leap = is_leap_year(min.year as i32);
-        let max_is_leap = is_leap_year((min.year + 1) as i32);
-
-        if (min_is_leap && min.day <= SIDate::LEAP_DAY)
-        || (max_is_leap && min.day >= SIDate::LEAP_DAY) {
-            max.add_days(365);
-        }
-        else {
-            max.add_days(364);
-        }
+        max.add_years(1);
+        max.add_days(-1);
 
         return (min, max);
     }
@@ -607,7 +615,7 @@ impl Staff {
             forename: self.forename(db),
             surname: self.surname(db),
             age: save_person.age,
-            birthplace: save_person._birthplace(save),
+            birthplace: save_person.birthplace(save),
             nation: save_person._nation_three_letter_name(save),
             second_nation: save_person._second_nation_three_letter_name(save),
             club: save_person._club_playing_short_name(save),

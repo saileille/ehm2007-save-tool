@@ -137,7 +137,7 @@ fn _get_staff_hash(data: &Data) -> HashMap<[String; 6], Staff> {
         let key = [
             person.forename(data),
             person.surname(data),
-            person._birthplace(data),
+            person.birthplace(data),
             person.nation_name(data),
             person.second_nation_name(data),
             person.club_contracted_name(data).unwrap(),

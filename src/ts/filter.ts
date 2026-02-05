@@ -1,7 +1,7 @@
 // Filtering scripts.
 
 import { invoke } from "@tauri-apps/api/core";
-import { fetchPlayers } from "./init";
+import { fetchPlayers } from "./table";
 
 // Create the filter elements.
 export const createFilterLayer = async (main: HTMLElement, filtersButton: HTMLButtonElement) => {

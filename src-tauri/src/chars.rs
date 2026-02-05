@@ -5,7 +5,7 @@ use std::{collections::HashMap, str::{Utf8Error, from_utf8}};
 use lazy_static::lazy_static;
 
 lazy_static! {
-    pub static ref CHARACTER_CHART: HashMap<u8, Vec<u8>> = HashMap::from([
+    pub static ref SI_TO_UTF8: HashMap<u8, Vec<u8>> = HashMap::from([
         (142, Vec::from([197, 189])),  // Ž
         (143, Vec::from([197, 136])),  // ň
         (144, Vec::from([196, 155])),  // ě
@@ -27,10 +27,12 @@ lazy_static! {
         (201, Vec::from([195, 137])),  // É
         (205, Vec::from([195, 141])),  // Í
         (206, Vec::from([195, 142])),  // Î
+        (211, Vec::from([195, 147])),  // Ó
         (214, Vec::from([195, 150])),  // Ö
         (216, Vec::from([195, 152])),  // Ø
         (218, Vec::from([195, 154])),  // Ú
         (220, Vec::from([195, 156])),  // Ü
+        (222, Vec::from([195, 158])),  // Þ
         (223, Vec::from([195, 159])),  // ß
         (224, Vec::from([195, 160])),  // à
         (225, Vec::from([195, 161])),  // á
@@ -48,6 +50,7 @@ lazy_static! {
         (237, Vec::from([195, 173])),  // í
         (238, Vec::from([195, 174])),  // î
         (239, Vec::from([195, 175])),  // ï
+        (240, Vec::from([195, 176])),  // ð
         (241, Vec::from([195, 177])),  // ñ
         (242, Vec::from([195, 178])),  // ò
         (243, Vec::from([195, 179])),  // ó
@@ -72,7 +75,7 @@ pub fn bytes_to_string(bytes: &[u8]) -> Result<String, Utf8Error> {
             break;
         }
 
-        match CHARACTER_CHART.get(byte) {
+        match SI_TO_UTF8.get(byte) {
             Some(v) => converted_bytes.append(&mut v.clone()),
             None => converted_bytes.push(*byte),
         }
@@ -84,7 +87,7 @@ pub fn bytes_to_string(bytes: &[u8]) -> Result<String, Utf8Error> {
 }
 
 // Get a simple string for debugging purposes.
-pub fn _bytes_to_string_debug(bytes: &[u8]) -> String {
+pub fn bytes_to_string_debug(bytes: &[u8]) -> String {
     let mut chars = Vec::new();
     for byte in bytes {
         if *byte == 0 {

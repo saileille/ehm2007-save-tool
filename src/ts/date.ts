@@ -72,9 +72,9 @@ const isLeapYear = (year: number): boolean => {
 export const getInGameDateText = async (): Promise<string> => {
     const dates: [number, number] = await invoke("get_ingame_date");
     if (dates[0] === dates[1]) {
-        return `In-game date is ${daysToDateString(dates[0])}.`;
+        return `Estimated date is ${daysToDateString(dates[0])}.`;
     }
     else {
-        return `In-game date is between ${daysToDateString(dates[0])} and ${daysToDateString(dates[1])}.`;
+        return `Estimated date is between ${daysToDateString(dates[0])} and ${daysToDateString(dates[1])}.`;
     }
 }

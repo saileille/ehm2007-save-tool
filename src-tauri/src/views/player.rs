@@ -23,6 +23,7 @@ impl Player {
             "Club Contracted" => json!(s.club_contracted_name(data).unwrap()),
             "Club Playing" => json!(s.club_playing_name(data).unwrap()),
             "Birthday" => json!(s.date_of_birth.to_days()),
+            "Birth Place" => json!(s.birthplace(data)),
             "Position" => json!(p.position_string()),
             "GK Rating" => json!(s.gk_rating(data)),
             "LD Rating" => json!(s.ld_rating(data)),

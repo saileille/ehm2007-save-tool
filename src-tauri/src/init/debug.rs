@@ -133,7 +133,7 @@ impl _Player {
             forename: person.forename(save),
             surname: person.surname(save),
             age: person.age,
-            birthplace: person._birthplace(save),
+            birthplace: person.birthplace(save),
             nation: person._nation_three_letter_name(save),
             second_nation: person._second_nation_three_letter_name(save),
             club_contracted: person._club_contracted_short_name(save),

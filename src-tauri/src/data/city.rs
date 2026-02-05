@@ -29,7 +29,7 @@ impl City {
         return data.nations.get(&self._nation_id).unwrap().clone();
     }
 
-    pub fn _nation_three_letter_name(&self, data: &Data) -> Option<String> {
+    pub fn nation_three_letter_name(&self, data: &Data) -> Option<String> {
         match data.nations.get(&self._nation_id) {
             Some(n) => Some(n._three_letter_name()),
             None => None,
@@ -40,7 +40,7 @@ impl City {
         return data.states_provinces.get(&self._state_id).unwrap().clone();
     }
 
-    pub fn _state_abbreviation(&self, data: &Data) -> Option<String> {
+    pub fn state_abbreviation(&self, data: &Data) -> Option<String> {
         match data.states_provinces.get(&self._state_id) {
             Some(s) => Some(s._abbreviation()),
             None => None,

@@ -21,13 +21,13 @@ pub mod staff_preferences;
 pub mod stage_name;
 pub mod state_province;
 
-use std::{cmp::Ordering, collections::HashMap, fs::File, io::{Cursor, Write as _}, mem};
+use std::{cmp::Ordering, collections::HashMap, io::Cursor, mem};
 
 use binread::BinRead;
 use tauri::webview::cookie::time::util::is_leap_year;
 
 use crate::{
-    chars::_bytes_to_string_debug, data::{
+    data::{
         arena::Arena, city::City, club::Club, colour::Colour, competition::Competition,
         competition_history::CompetitionHistory, continent::Continent, currency::Currency,
         draft::Draft, injury::Injury, name::Name, nation::Nation, non_player::NonPlayer,
@@ -151,64 +151,6 @@ impl Data {
         };
 
         return data;
-    }
-
-    // Replace the contents of this data with another.
-    pub fn _update(&mut self, other: Data) {
-        self._header = other._header;
-        self.file_indexes = other.file_indexes;
-        self.date_range = other.date_range;
-        self.continents = other.continents;
-        self.officials = other.officials;
-        self.forenames = other.forenames;
-        self.surnames = other.surnames;
-        self.cities = other.cities;
-        self.clubs = other.clubs;
-        self.nat_clubs = other.nat_clubs;
-        self.staff_awards = other.staff_awards;
-        self.competitions = other.competitions;
-        self.nat_competitions = other.nat_competitions;
-        self.comp_history = other.comp_history;
-        self.nat_comp_history = other.nat_comp_history;
-        self.colours = other.colours;
-        self.nations = other.nations;
-        self.arenas = other.arenas;
-        self.staff = other.staff;
-        self.nonplayers = other.nonplayers;
-        self.players = other.players;
-        self.staff_preferences = other.staff_preferences;
-        self.retired_numbers = other.retired_numbers;
-        self.states_provinces = other.states_provinces;
-        self.injuries = other.injuries;
-        self.drafts = other.drafts;
-        self.stage_names = other.stage_names;
-        self.binaries = other.binaries;
-        self.order_continents = other.order_continents;
-        self.order_officials = other.order_officials;
-        self.order_forenames = other.order_forenames;
-        self.order_surnames = other.order_surnames;
-        self.order_cities = other.order_cities;
-        self.order_clubs = other.order_clubs;
-        self.order_nat_clubs = other.order_nat_clubs;
-        self.order_staff_awards = other.order_staff_awards;
-        self.order_competitions = other.order_competitions;
-        self.order_nat_competitions = other.order_nat_competitions;
-        self.order_comp_history = other.order_comp_history;
-        self.order_nat_comp_history = other.order_nat_comp_history;
-        self.order_colours = other.order_colours;
-        self.order_nations = other.order_nations;
-        self.order_arenas = other.order_arenas;
-        self.order_staff = other.order_staff;
-        self.order_players = other.order_players;
-        self.order_staff_preferences = other.order_staff_preferences;
-        self.order_retired_numbers = other.order_retired_numbers;
-        self.order_states_provinces = other.order_states_provinces;
-        self.order_injuries = other.order_injuries;
-        self.order_currencies = other.order_currencies;
-        self.order_drafts = other.order_drafts;
-        self.order_stage_names = other.order_stage_names;
-        self.nhl_ids = other.nhl_ids;
-        self.na_ids = other.na_ids;
     }
 
     // Get a save file of the data.
@@ -447,25 +389,36 @@ impl Data {
         self.date_range[1] = SIDate { day: 366, year: i16::MAX, b_is_leap_year: 0 };
 
         for staff in self.staff.values() {
-            // Ignore people born in leap years because game shows their ages incorrectly.
-            // Maybe should use leap years if the current year is also a leap year?
-            if is_leap_year(staff.date_of_birth.year as i32) {
-                continue;
-            }
-
             let (min_date, max_date) = staff.dates_with_this_age();
             if min_date > self.date_range[0] {
                 self.date_range[0] = min_date;
 
+                println!(
+                    "{} - {}\n{}, {}, {}",
+                    self.date_range[0].to_string(),
+                    self.date_range[1].to_string(),
+                    staff.full_name(self),
+                    staff.age,
+                    staff.date_of_birth.to_string(),
+                );
             }
             if max_date < self.date_range[1] {
                 self.date_range[1] = max_date;
+
+                println!(
+                    "{} - {}\n{}, {}, {}",
+                    self.date_range[0].to_string(),
+                    self.date_range[1].to_string(),
+                    staff.full_name(self),
+                    staff.age,
+                    staff.date_of_birth.to_string(),
+                );
             }
 
             // The date has been determined when the dates are equal.
-            if self.date_range[0] == self.date_range[1] {
-                break;
-            }
+            // if self.date_range[0] == self.date_range[1] {
+            //     break;
+            // }
         }
     }
 
@@ -522,67 +475,6 @@ impl Data {
 
 
         }
-    }
-
-    // Create a CSV for character replacement.
-    pub fn _create_character_csv(&self) {
-        let mut staff_ids: Vec<i32> = self.staff.keys().into_iter().map(|id| *id).collect();
-        staff_ids.sort();
-
-        let mut string = Vec::new();
-        for id in staff_ids {
-            let person = self.staff.get(&id).unwrap();
-            let forename = person._forename_object(self);
-            let surname = person._surname_object(self);
-
-            let forename_error = forename.name();
-            let surname_error = surname.name();
-
-            let forename_string = match &forename_error {
-                Ok(s) => s.clone(),
-                Err(_) => _bytes_to_string_debug(&forename.b_name),
-            };
-
-            let surname_string = match &surname_error {
-                Ok(s) => s.clone(),
-                Err(_) => _bytes_to_string_debug(&surname.b_name)
-            };
-
-            match forename_error {
-                Ok(_) => (),
-                Err(e) => println!(
-                    "{e}\nbytes: {:?}\nstring: {}\nname: {} {}\nbirthyear: {}\nbirthplace: {}\nnationality: {}\nclub: {}",
-                    forename.b_name,
-                    forename_string,
-                    forename_string,
-                    surname_string,
-                    person.date_of_birth.year,
-                    person._birthplace(self),
-                    person.nation_name(self),
-                    person.club_contracted_name(self).unwrap(),
-                )
-            }
-
-            match surname_error {
-                Ok(_) => (),
-                Err(e) => println!(
-                    "{e}\nbytes: {:?}\nstring: {}\nname: {} {}\nbirthyear: {}\nbirthplace: {}\nnationality: {}\nclub: {}",
-                    surname.b_name,
-                    surname_string,
-                    forename_string,
-                    surname_string,
-                    person.date_of_birth.year,
-                    person._birthplace(self),
-                    person.nation_name(self),
-                    person.club_contracted_name(self).unwrap(),
-                )
-            }
-
-            string.push(format!("{id}\t{}\t{}\t{:?}\t{:?}", forename_string, surname_string, forename.b_name, surname.b_name));
-        }
-
-        let mut file = File::create(r"D:\Programs\NHL Eastside Hockey Manager 2007\tools\Own Projects\character conversion\data.csv").unwrap();
-        file.write_all(string.join("\n").as_bytes()).unwrap();
     }
 
 }
@@ -642,11 +534,14 @@ impl PartialOrd for SIDate {
 }
 
 impl SIDate {
-    // The day of Feb 29.
-    const LEAP_DAY: i16 = 59;
-
-    fn _is_leap_year(&self) -> bool {
+    // SI bullshit.
+    fn is_leap_year_si(&self) -> bool {
         return self.b_is_leap_year != 0;
+    }
+
+    // Actual leap year.
+    fn is_leap_year(&self) -> bool {
+        return is_leap_year(self.year as i32);
     }
 
     fn _is_default(&self) -> bool {
@@ -661,6 +556,16 @@ impl SIDate {
         bytes.extend_from_slice(&self.b_is_leap_year.to_le_bytes());
 
         return bytes;
+    }
+
+    fn to_string(&self) -> String {
+        return format!(
+            "({}, {}, {}, {})",
+            self.year,
+            self.day,
+            is_leap_year(self.year as i32),
+            self.is_leap_year_si(),
+        );
     }
 
     // Get days from the default.
@@ -687,6 +592,15 @@ impl SIDate {
         // Add days from this date's year.
         days += self.day as usize;
         return days;
+    }
+
+    // Add this many years to the date. Negative years subtract.
+    fn add_years(&mut self, years: i16) {
+        self.year += years as i16;
+
+        if self.day == 365 && !self.is_leap_year() {
+            self.day -= 1;
+        }
     }
 
     // Add this many days to the date. Negative values subtract.
