@@ -36,7 +36,9 @@ pub fn run() {
             commands::load_save,
             commands::fetch_players,
             commands::get_ingame_date,
-            commands::get_filter_data,
+            commands::get_nations,
+            commands::get_clubs,
+            commands::get_comps,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

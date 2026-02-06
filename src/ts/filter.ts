@@ -3,6 +3,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { fetchPlayers } from "./table";
 
+type IncludeExclude = "Include" | "Exclude";
+
 // Create the filter elements.
 export const createFilterLayer = async (main: HTMLElement, filtersButton: HTMLButtonElement) => {
     const filterEffect = document.createElement("div");
@@ -21,12 +23,15 @@ export const createFilterLayer = async (main: HTMLElement, filtersButton: HTMLBu
         filterMenu.style.display = "";
     };
 
-    await createNationFilter(filterContainer);
-    createCanPlayForCountryCheck(filterContainer);
-    createCanChooseCountryCheck(filterContainer);
     createBirthYearFilter(filterContainer);
-    createNHLExclusion(filterContainer);
-    createNorthAmericaExclusion(filterContainer);
+    createEitherYesNo(filterContainer, "Can Play For Country", "can-play-for-country");
+    createEitherYesNo(filterContainer, "Has Second Nationality", "second-nationality");
+    createEitherYesNo(filterContainer, "Has Declared for Nation", "has-declared");
+    createIncludeExcludeFieldset("Include", filterContainer);
+    createIncludeExcludeFieldset("Exclude", filterContainer);
+
+    // createNHLExclusion(filterContainer);
+    // createNorthAmericaExclusion(filterContainer);
 
     const applyFiltersButton = document.createElement("button");
     applyFiltersButton.textContent = "Apply";
@@ -43,56 +48,176 @@ export const createFilterLayer = async (main: HTMLElement, filtersButton: HTMLBu
     main.append(filterMenu, filterEffect);
 };
 
-// Create the filter for nationality.
-const createNationFilter = async (filterMenu: HTMLDivElement) => {
-    const nations: [number, string][] = await invoke("get_filter_data");
+// Create a section for search terms to be included.
+const createIncludeExcludeFieldset = (type: IncludeExclude, filterContainer: HTMLDivElement) => {
+    const fieldset = document.createElement("fieldset");
+    const legend = document.createElement("legend");
+    legend.textContent = type;
 
-    const div = document.createElement("div");
+    const menu = document.createElement("select");
 
-    const label = document.createElement("label");
-    label.htmlFor = "nation";
-    label.textContent = "Nationality";
+    const options = [
+        ["default", "Add..."],
+        ["nationality", "Nationality"],
+        ["club-contracted", "Club Contracted"],
+        ["club-playing", "Club Playing"],
+        ["comp-contracted", "Competition Contracted"],
+        ["comp-playing", "Competition Playing"],
+        ["nation-contracted", "Nation Contracted"],
+        ["nation-playing", "Nation Playing"],
+    ];
 
-    const datalist = document.createElement("select");
-    datalist.id = "nation";
-    for (const nation of nations) {
+    for (const optionData of options) {
         const option = document.createElement("option");
-        option.value = nation[0].toString();
-        option.textContent = nation[1];
-        datalist.appendChild(option);
+        option.value = optionData[0];
+        option.textContent = optionData[1];
+        menu.appendChild(option);
     }
 
-    div.append(label, document.createElement("br"), datalist);
-    filterMenu.appendChild(div);
+    menu.onchange = () => {
+        addCriterium(type, menu, fieldset);
+        menu.value = "default";
+    };
+
+    fieldset.append(legend, menu);
+    filterContainer.appendChild(fieldset);
 };
 
-// Create the checkbox for national team eligibility.
-const createCanPlayForCountryCheck = (filterMenu: HTMLDivElement) => {
+// Add either include or exclude element.
+const addCriterium = async (type: IncludeExclude, menu: HTMLSelectElement, container: HTMLFieldSetElement) => {
+    const criterium = menu.value;
+    const name = menu.selectedOptions[0].textContent;
+
+    const typeLowerCase = type.toLowerCase();
+
     const div = document.createElement("div");
     const label = document.createElement("label");
-    label.htmlFor = "can-play-for-country";
-    label.textContent = "Can Play for the National Team";
+    label.textContent = name;
 
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.id = "can-play-for-country";
+    const filter = document.createElement("input");
+    filter.type = "text";
 
-    div.append(checkbox, label);
-    filterMenu.appendChild(div);
+    const delButton = document.createElement("button");
+    delButton.textContent = "Delete";
+
+    let select: HTMLSelectElement | undefined;
+    switch (criterium) {
+        case "nationality":
+            select = await createSelect("get_nations");
+            break;
+
+        case "club-contracted":
+            select = await createSelect("get_clubs");
+            break;
+
+        case "club-playing":
+            select = await createSelect("get_clubs");
+            break;
+
+        case "comp-contracted":
+            select = await createSelect("get_comps");
+            break;
+
+        case "comp-playing":
+            select = await createSelect("get_comps");
+            break;
+
+        case "nation-contracted":
+            select = await createSelect("get_nations");
+            break;
+
+        case "nation-playing":
+            select = await createSelect("get_nations");
+            break;
+    }
+
+    if (select === undefined) {
+        return;
+    }
+
+    select.className = `${typeLowerCase}-${criterium}`;
+
+    filter.oninput = () => {
+        searchFilter(filter, select);
+    };
+
+    delButton.onclick = () => {
+        div.remove();
+    };
+
+    div.append(label, select, filter, delButton);
+    container.appendChild(div);
 };
 
-// Create the checkbox for filtering players who can play for two countries.
-const createCanChooseCountryCheck = (filterMenu: HTMLDivElement) => {
+// The function for a search filter.
+const searchFilter = (filter: HTMLInputElement, select: HTMLSelectElement) => {
+    const text = filter.value.toLowerCase();
+    let chosen = false;
+    for (const o of select.children) {
+        const option = o as HTMLOptionElement;
+        if (option.textContent.toLowerCase().includes(text)) {
+            option.style.display = "";
+            if (!chosen) {
+                select.value = option.value;
+                chosen = true;
+            }
+        }
+        else {
+            option.style.display = "none";
+        }
+    }
+};
+
+const createSelect = async (fn: string): Promise<HTMLSelectElement> => {
+    const select = document.createElement("select");
+    invoke(fn).then((d) => {
+        const data = d as [number, string][];
+        for (const item of data) {
+            const option = document.createElement("option");
+            option.value = item[0].toString();
+            option.textContent = item[1];
+            select.appendChild(option);
+        }
+    });
+
+    return select;
+};
+
+// Create a radio group with three options.
+const createEitherYesNo = (filterMenu: HTMLDivElement, title: string, name: string) => {
     const div = document.createElement("div");
-    const label = document.createElement("label");
-    label.htmlFor = "can-choose-country";
-    label.textContent = "Can Choose the National Team";
+    const p = document.createElement("p");
+    p.textContent = title;
 
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.id = "can-choose-country";
+    const labelEither = document.createElement("label");
+    labelEither.htmlFor = `${name}-either`;
+    labelEither.textContent = "Either";
+    const either = document.createElement("input");
+    either.type = "radio";
+    either.id = `${name}-either`;
+    either.value = `${name}-either`;
+    either.name = name;
+    either.checked = true;
 
-    div.append(checkbox, label);
+    const labelYes = document.createElement("label");
+    labelYes.htmlFor = `${name}-yes`;
+    labelYes.textContent = "Yes";
+    const yes = document.createElement("input");
+    yes.type = "radio";
+    yes.id = `${name}-yes`;
+    yes.value = `${name}-yes`;
+    yes.name = name;
+
+    const labelNo = document.createElement("label");
+    labelNo.htmlFor = `${name}-no`;
+    labelNo.textContent = "No";
+    const no = document.createElement("input");
+    no.type = "radio"
+    no.id = `${name}-no`;
+    no.value = `${name}-no`;
+    no.name = name;
+
+    div.append(p, either, labelEither, yes, labelYes, no, labelNo);
     filterMenu.appendChild(div);
 };
 
@@ -100,57 +225,138 @@ const createCanChooseCountryCheck = (filterMenu: HTMLDivElement) => {
 const createBirthYearFilter = (filterMenu: HTMLDivElement) => {
     const div = document.createElement("div");
     const label = document.createElement("label");
-    label.htmlFor = "earliest-birth-year";
-    label.textContent = "Earliest Birth Year";
+    label.textContent = "Birth Year";
 
-    const input = document.createElement("input");
-    input.type = "number";
-    input.id = "earliest-birth-year";
-    input.value = "0";
+    const inputEarliest = document.createElement("input");
+    inputEarliest.type = "number";
+    inputEarliest.id = "earliest-birth-year";
+    inputEarliest.className = "year";
+    inputEarliest.value = "0";
 
-    div.append(label, input);
+    const inputLatest = document.createElement("input");
+    inputLatest.type = "number";
+    inputLatest.id = "latest-birth-year";
+    inputLatest.className = "year";
+    inputLatest.value = "9999";
+
+    div.append(label, inputEarliest, document.createTextNode(" - "), inputLatest);
     filterMenu.appendChild(div);
 };
 
-// Create a filter for excluding NHL players.
-const createNHLExclusion = (filterMenu: HTMLDivElement) => {
-    const div = document.createElement("div");
-    const label = document.createElement("label");
-    label.htmlFor = "exclude-nhl";
-    label.textContent = "Exclude NHL Players";
+// Get undefined, true or false from a three-option radio group.
+const getEitherYesNo = (name: string): boolean | undefined => {
+    if ((document.getElementById(`${name}-yes`) as HTMLInputElement).checked) {
+        return true;
+    }
 
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.id = "exclude-nhl";
+    if ((document.getElementById(`${name}-no`) as HTMLInputElement).checked) {
+        return false;
+    }
 
-    div.append(checkbox, label);
-    filterMenu.appendChild(div);
-};
-
-// Create a filter for excluding players playing in North America.
-const createNorthAmericaExclusion = (filterMenu: HTMLDivElement) => {
-    const div = document.createElement("div");
-    const label = document.createElement("label");
-    label.htmlFor = "exclude-na";
-    label.textContent = "Exclude Players in North America";
-
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.id = "exclude-na";
-
-    div.append(checkbox, label);
-    filterMenu.appendChild(div);
+    return undefined;
 };
 
 // Apply the filters.
 export const applyFilters = async () => {
-    const nationId = Number((document.getElementById("nation") as HTMLSelectElement).value);
-    const nationalTeamCheck = (document.getElementById("can-play-for-country") as HTMLInputElement).checked;
-    const countryChoiceCheck = (document.getElementById("can-choose-country") as HTMLInputElement).checked;
-    const earliestBirthYear = Number((document.getElementById("earliest-birth-year") as HTMLInputElement).value);
-    const excludeNHL = (document.getElementById("exclude-nhl") as HTMLInputElement).checked;
-    const excludeNA = (document.getElementById("exclude-na") as HTMLInputElement).checked;
-    await fetchPlayers(nationId, nationalTeamCheck, countryChoiceCheck, earliestBirthYear, excludeNHL, excludeNA);
+    const birthYears: [number, number] = [
+        Number((document.getElementById("earliest-birth-year") as HTMLInputElement).value),
+        Number((document.getElementById("latest-birth-year") as HTMLInputElement).value),
+    ];
+
+    const nationalTeamCheck = getEitherYesNo("can-play-for-country");
+    const secondNationalityCheck = getEitherYesNo("second-nationality");
+    const declaredCheck = getEitherYesNo("has-declared");
+
+    const includeNationalities = [];
+    for (const element of document.getElementsByClassName("include-nationality")) {
+        includeNationalities.push(Number((element as HTMLSelectElement).value));
+    }
+
+    const excludeNationalities = [];
+    for (const element of document.getElementsByClassName("exclude-nationality")) {
+        excludeNationalities.push(Number((element as HTMLSelectElement).value));
+    }
+
+    const includeClubsContracted = [];
+    for (const element of document.getElementsByClassName("include-club-contracted")) {
+        includeClubsContracted.push(Number((element as HTMLSelectElement).value));
+    }
+
+    const excludeClubsContracted = [];
+    for (const element of document.getElementsByClassName("exclude-club-contracted")) {
+        excludeClubsContracted.push(Number((element as HTMLSelectElement).value));
+    }
+
+    const includeClubsPlaying = [];
+    for (const element of document.getElementsByClassName("include-club-playing")) {
+        includeClubsPlaying.push(Number((element as HTMLSelectElement).value));
+    }
+
+    const excludeClubsPlaying = [];
+    for (const element of document.getElementsByClassName("exclude-club-playing")) {
+        excludeClubsPlaying.push(Number((element as HTMLSelectElement).value));
+    }
+
+    const includeCompsContracted = [];
+    for (const element of document.getElementsByClassName("include-comp-contracted")) {
+        includeCompsContracted.push(Number((element as HTMLSelectElement).value));
+    }
+
+    const excludeCompsContracted = [];
+    for (const element of document.getElementsByClassName("exclude-comp-contracted")) {
+        excludeCompsContracted.push(Number((element as HTMLSelectElement).value));
+    }
+
+    const includeCompsPlaying = [];
+    for (const element of document.getElementsByClassName("include-comp-playing")) {
+        includeCompsPlaying.push(Number((element as HTMLSelectElement).value));
+    }
+
+    const excludeCompsPlaying = [];
+    for (const element of document.getElementsByClassName("exclude-comp-playing")) {
+        excludeCompsPlaying.push(Number((element as HTMLSelectElement).value));
+    }
+
+    const includeNationsContracted = [];
+    for (const element of document.getElementsByClassName("include-nation-contracted")) {
+        includeNationsContracted.push(Number((element as HTMLSelectElement).value));
+    }
+
+    const excludeNationsContracted = [];
+    for (const element of document.getElementsByClassName("exclude-nation-contracted")) {
+        excludeNationsContracted.push(Number((element as HTMLSelectElement).value));
+    }
+
+    const includeNationsPlaying = [];
+    for (const element of document.getElementsByClassName("include-nation-playing")) {
+        includeNationsPlaying.push(Number((element as HTMLSelectElement).value));
+    }
+
+    const excludeNationsPlaying = [];
+    for (const element of document.getElementsByClassName("exclude-nation-playing")) {
+        excludeNationsPlaying.push(Number((element as HTMLSelectElement).value));
+    }
+
+    await fetchPlayers(
+        birthYears,
+        nationalTeamCheck,
+        secondNationalityCheck,
+        declaredCheck,
+        includeNationalities,
+        excludeNationalities,
+        includeClubsContracted,
+        excludeClubsContracted,
+        includeClubsPlaying,
+        excludeClubsPlaying,
+        includeCompsContracted,
+        excludeCompsContracted,
+        includeCompsPlaying,
+        excludeCompsPlaying,
+        includeNationsContracted,
+        excludeNationsContracted,
+        includeNationsPlaying,
+        excludeNationsPlaying,
+    );
 }
 
 const onApplyFiltersButtonClick = () => {

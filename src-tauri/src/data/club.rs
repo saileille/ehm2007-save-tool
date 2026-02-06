@@ -22,7 +22,7 @@ pub struct Club {
     pub nation_id: i32,
     pub division_id: i32,
     _last_division_id: i32,
-    _reserve_division_id: i32,
+    pub reserve_division_id: i32,
     _stadium_id: i32,
     _practice_facilities_id: i32,
     _foreground_colour1_id: i32,
@@ -127,7 +127,7 @@ impl Club {
         bytes.extend_from_slice(&self.nation_id.to_le_bytes());
         bytes.extend_from_slice(&self.division_id.to_le_bytes());
         bytes.extend_from_slice(&self._last_division_id.to_le_bytes());
-        bytes.extend_from_slice(&self._reserve_division_id.to_le_bytes());
+        bytes.extend_from_slice(&self.reserve_division_id.to_le_bytes());
         bytes.extend_from_slice(&self._stadium_id.to_le_bytes());
         bytes.extend_from_slice(&self._practice_facilities_id.to_le_bytes());
         bytes.extend_from_slice(&self._foreground_colour1_id.to_le_bytes());

@@ -89,20 +89,46 @@ export const HEADERS = [
 ];
 
 // Get the players from the database.
-export const fetchPlayers = async (nationId: number,
-    nationalTeamCheck: boolean,
-    countryChoiceCheck: boolean,
-    earliestBirthYear: number,
-    excludeNHL: boolean,
-    excludeNA: boolean) => {
+export const fetchPlayers = async (
+    birthYears: [number, number],
+    nationalTeamCheck: boolean | undefined,
+    secondNationalityCheck: boolean | undefined,
+    declaredCheck: boolean | undefined,
+    includeNationalities: number[],
+    excludeNationalities: number[],
+    includeClubsContracted: number[],
+    excludeClubsContracted: number[],
+    includeClubsPlaying: number[],
+    excludeClubsPlaying: number[],
+    includeCompsContracted: number[],
+    excludeCompsContracted: number[],
+    includeCompsPlaying: number[],
+    excludeCompsPlaying: number[],
+    includeNationsContracted: number[],
+    excludeNationsContracted: number[],
+    includeNationsPlaying: number[],
+    excludeNationsPlaying: number[],
+) => {
     invoke("fetch_players", {
         "headers": HEADERS,
-        "nationId": nationId,
+        "birthYears": birthYears,
         "nationalTeamCheck": nationalTeamCheck,
-        "countryChoiceCheck": countryChoiceCheck,
-        "earliestBirthYear": earliestBirthYear,
-        "excludeNhl": excludeNHL,
-        "excludeNa": excludeNA,
+        "secondNationalityCheck": secondNationalityCheck,
+        "declaredCheck": declaredCheck,
+        "includeNationalities": includeNationalities,
+        "excludeNationalities": excludeNationalities,
+        "includeClubsContracted": includeClubsContracted,
+        "excludeClubsContracted": excludeClubsContracted,
+        "includeClubsPlaying": includeClubsPlaying,
+        "excludeClubsPlaying": excludeClubsPlaying,
+        "includeCompsContracted": includeCompsContracted,
+        "excludeCompsContracted": excludeCompsContracted,
+        "includeCompsPlaying": includeCompsPlaying,
+        "excludeCompsPlaying": excludeCompsPlaying,
+        "includeNationsContracted": includeNationsContracted,
+        "excludeNationsContracted": excludeNationsContracted,
+        "includeNationsPlaying": includeNationsPlaying,
+        "excludeNationsPlaying": excludeNationsPlaying,
     }).then((players) => {
         PLAYERS = players as Player[];
         initialisePaging();

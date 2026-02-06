@@ -273,7 +273,7 @@ impl Staff {
         };
     }
 
-    pub fn _club_playing(&self, data: &Data) -> Option<Club> {
+    pub fn club_playing(&self, data: &Data) -> Option<Club> {
         return data.clubs.get(&self.club_playing_id).cloned();
     }
 
@@ -313,87 +313,175 @@ impl Staff {
     }
 
     pub fn check_player_filters(
-            &self,
-            data: &Data,
-            nation_id: i32,
-            national_team_check: bool,
-            country_choice_check: bool,
-            earliest_birth_year: i16,
-            exclude_nhl: bool,
-            exclude_na: bool) -> bool {
-        return self.has_nationality(nation_id)
-        && self.check_national_team(nation_id, national_team_check)
-        && self.check_country_choice(nation_id, country_choice_check)
-        && self.has_given_age(earliest_birth_year)
-        && self.check_na_exclusion(data, exclude_na, exclude_nhl);
+        &self,
+        data: &Data,
+        birth_years: [i16; 2],
+        national_team_check: Option<bool>,
+        second_nationality_check: Option<bool>,
+        declared_check: Option<bool>,
+        include_nationalities: &[i32],
+        exclude_nationalities: &[i32],
+        include_clubs_contracted: &[i32],
+        exclude_clubs_contracted: &[i32],
+        include_clubs_playing: &[i32],
+        exclude_clubs_playing: &[i32],
+        include_comps_contracted: &[i32],
+        exclude_comps_contracted: &[i32],
+        include_comps_playing: &[i32],
+        exclude_comps_playing: &[i32],
+        include_nations_contracted: &[i32],
+        exclude_nations_contracted: &[i32],
+        include_nations_playing: &[i32],
+        exclude_nations_playing: &[i32],
+    ) -> bool {
+        return self.has_nationality(include_nationalities, exclude_nationalities)
+        && self.check_national_team(include_nationalities, national_team_check)
+        && self.has_second_nationality(second_nationality_check)
+        && self.has_declared(declared_check)
+        && self.has_given_age(birth_years)
+        && self.check_club_contracted(include_clubs_contracted, exclude_clubs_contracted)
+        && self.check_club_playing(include_clubs_playing, exclude_clubs_playing)
+        && self.check_comp_contracted(data, include_comps_contracted, exclude_comps_contracted)
+        && self.check_comp_playing(data, include_comps_playing, exclude_comps_playing)
+        && self.check_nation_contracted(data, include_nations_contracted, exclude_nations_contracted)
+        && self.check_nation_playing(data, include_nations_playing, exclude_nations_playing)
     }
 
-    // Check if the player is in the NHL or North America.
-    fn check_na_exclusion(&self, data: &Data, exclude_na: bool, exclude_nhl: bool) -> bool {
-        if !exclude_nhl && !exclude_na {
-            return true;
-        }
+    // Check if the person's club contracted matches the filters.
+    fn check_nation_contracted(&self, data: &Data, include: &[i32], exclude: &[i32]) -> bool {
+        if include.is_empty() && exclude.is_empty() { return true; }
+        let nation_id = match self.club_contracted(data) {
+            Some(club) => club.nation_id,
+            None => -1
+        };
 
-        let club = self.club_contracted(data);
-        if club.is_none() {
-            return true;
-        }
-
-        let club = club.unwrap();
-        if exclude_na && data.na_ids.contains(&club.nation_id) {
+        if exclude.contains(&nation_id) {
             return false;
         }
 
-        if exclude_nhl {
-            return !data.nhl_ids.contains(&club.division_id);
+        return include.is_empty() || include.contains(&nation_id);
+    }
+
+    // Check if the person's club contracted matches the filters.
+    fn check_nation_playing(&self, data: &Data, include: &[i32], exclude: &[i32]) -> bool {
+        if include.is_empty() && exclude.is_empty() { return true; }
+        let nation_id = match self.club_playing(data) {
+            Some(club) => club.nation_id,
+            None => -1
+        };
+
+        if exclude.contains(&nation_id) {
+            return false;
         }
 
-        return true;
+        return include.is_empty() || include.contains(&nation_id);
+    }
+
+    // Check if the person's club contracted matches the filters.
+    fn check_comp_contracted(&self, data: &Data, include: &[i32], exclude: &[i32]) -> bool {
+        if include.is_empty() && exclude.is_empty() { return true; }
+        let (division_id, reserve_division_id) = match self.club_contracted(data) {
+            Some(club) => (club.division_id, club.reserve_division_id),
+            None => (-1, -1)
+        };
+
+        if exclude.contains(&division_id)
+        || exclude.contains(&reserve_division_id) {
+            return false;
+        }
+
+        return include.is_empty()
+        || include.contains(&division_id)
+        || include.contains(&reserve_division_id);
+    }
+
+    // Check if the person's club playing matches the filters.
+    fn check_comp_playing(&self, data: &Data, include: &[i32], exclude: &[i32]) -> bool {
+        if include.is_empty() && exclude.is_empty() { return true; }
+        let (division_id, reserve_division_id) = match self.club_playing(data) {
+            Some(club) => (club.division_id, club.reserve_division_id),
+            None => (-1, -1)
+        };
+
+        if exclude.contains(&division_id)
+        || exclude.contains(&reserve_division_id) {
+            return false;
+        }
+
+        return include.is_empty()
+        || include.contains(&division_id)
+        || include.contains(&reserve_division_id);
+    }
+
+    // Check if the person's club contracted matches the filters.
+    fn check_club_contracted(&self, include: &[i32], exclude: &[i32]) -> bool {
+        if exclude.contains(&self.club_contracted_id) {
+            return false;
+        }
+
+        return include.is_empty()
+        || include.contains(&self.club_contracted_id);
+    }
+
+    // Check if the person's club playing matches the filters.
+    fn check_club_playing(&self, include: &[i32], exclude: &[i32]) -> bool {
+        if exclude.contains(&self.club_playing_id) {
+            return false;
+        }
+
+        return include.is_empty()
+        || include.contains(&self.club_playing_id);
     }
 
     // Check if the player falls within specified age group.
-    fn has_given_age(&self, earliest_birth_year: i16) -> bool {
-        return self.date_of_birth.year >= earliest_birth_year;
+    fn has_given_age(&self, birth_years: [i16; 2]) -> bool {
+        return self.date_of_birth.year >= birth_years[0]
+        && self.date_of_birth.year <= birth_years[1];
     }
 
-    // Check if the player can play for the national team of the given nation.
-    fn check_national_team(&self, nation_id: i32, national_team_check: bool) -> bool {
-        // Cannot check this against non-nations.
-        if nation_id < 0 || !national_team_check {
-            return true;
-        }
+    // Check if the player can play for one of the national teams of the given nations.
+    fn check_national_team(&self, include_nationalities: &[i32], national_team_check: Option<bool>) -> bool {
+        // None means either works.
+        if national_team_check.is_none() { return true; }
 
+        let national_team_check = national_team_check.unwrap();
         let declared = self.declared_nation_id();
-        return declared.is_none() || declared.unwrap() == nation_id;
-    }
-
-    // Check if the player can choose to play for this country.
-    fn check_country_choice(&self, nation_id: i32, country_choice_check: bool) -> bool {
-        // Cannot check this against non-nations.
-        if nation_id < 0 || !country_choice_check {
-            return true;
-        }
-
-        // Cannot choose to play for this country if the player does not have a second country.
-        if self.second_nation_id < 0 {
-            return false;
-        }
-
-        return self.declared_nation_id().is_none();
+        return (declared.is_none() || include_nationalities.contains(&declared.unwrap())) == national_team_check;
     }
 
     // Check if the person has the given nationality.
-    fn has_nationality(&self, nation_id: i32) -> bool {
-        // -2 is used as any nation.
-        if nation_id == -2 {
-            return true;
+    fn has_nationality(&self, include_nationalities: &[i32], exclude_nationalities: &[i32]) -> bool {
+        if exclude_nationalities.contains(&self.nation_id)
+        || exclude_nationalities.contains(&self.second_nation_id) {
+            return false;
         }
-        if nation_id == self.nation_id {
+
+        if include_nationalities.is_empty()
+        || include_nationalities.contains(&self.nation_id) {
             return true;
         }
 
-        // -1 means no nation, so we do not want to check that against second nation.
-        return nation_id != -1 && nation_id == self.second_nation_id;
+        if self.second_nation_id != -1 && include_nationalities.contains(&self.second_nation_id)  {
+            return true;
+        }
+
+        return false;
+    }
+
+    // See if the person's second nationality matches filters.
+    fn has_second_nationality(&self, second_nationality_check: Option<bool>) -> bool {
+        if second_nationality_check.is_none() { return true; }
+        let second_nationality_check = second_nationality_check.unwrap();
+
+        return (self.second_nation_id == -1) != second_nationality_check;
+    }
+
+    // See if the person's national team declaration matches filters.
+    fn has_declared(&self, declared_check: Option<bool>) -> bool {
+        if declared_check.is_none() { return true; }
+        let declared_check = declared_check.unwrap();
+
+        return (self.declared_nation == 0) != declared_check;
     }
 
     // Check if the person's name has no special characters.
