@@ -5,6 +5,8 @@ import { fetchPlayers } from "./table";
 
 type IncludeExclude = "Include" | "Exclude";
 
+let FILTER_CACHE = "";
+
 // Create the filter elements.
 export const createFilterLayer = async (main: HTMLElement, filtersButton: HTMLButtonElement) => {
     const filterEffect = document.createElement("div");
@@ -45,19 +47,34 @@ export const createFilterLayer = async (main: HTMLElement, filtersButton: HTMLBu
     createIncludeExcludeFieldset("Include", filterContainer);
     createIncludeExcludeFieldset("Exclude", filterContainer);
 
+    // const cancelFiltersButton = document.createElement("button");
+    // cancelFiltersButton.textContent = "Cancel";
+    // cancelFiltersButton.onclick = () => {
+    //     onCancelFiltersButtonClick(filterMenu, filterEffect, filterContainer);
+    // }
+
     const applyFiltersButton = document.createElement("button");
     applyFiltersButton.textContent = "Apply";
-    applyFiltersButton.onclick = onApplyFiltersButtonClick;
+    applyFiltersButton.onclick = () => {
+        onApplyFiltersButtonClick(filterMenu, filterEffect, filterContainer);
+    };
 
     // Bind filter-apply to the enter key.
     onkeyup = (e) => {
-        if (e.code === "Enter" && filterMenu.style.display !== "none") {
-            onApplyFiltersButtonClick();
+        if (filterMenu.style.display !== "none") {
+            if (e.code === "Enter") {
+                onApplyFiltersButtonClick(filterMenu, filterEffect, filterContainer);
+            }
+            // else if (e.code === "Escape") {
+            //     onCancelFiltersButtonClick(filterMenu, filterEffect, filterContainer);
+            // }
         }
     };
 
     filterMenu.append(filterContainer, applyFiltersButton);
     main.append(filterMenu, filterEffect);
+
+    FILTER_CACHE = filterContainer.innerHTML;
 };
 
 // Create a section for search terms to be included.
@@ -118,6 +135,7 @@ const addCriterium = async (type: IncludeExclude, menu: HTMLSelectElement, conta
 
     const filter = document.createElement("input");
     filter.type = "text";
+    filter.className = "text-filter";
 
     const delButton = document.createElement("button");
     delButton.textContent = "Delete";
@@ -386,13 +404,18 @@ export const applyFilters = async () => {
     document.body.style.overflow = "";
 }
 
-const onApplyFiltersButtonClick = () => {
+const onApplyFiltersButtonClick = (filterMenu: HTMLDivElement, filterEffect: HTMLDivElement, filterContainer: HTMLDivElement) => {
     applyFilters();
-    const filterMenu = document.getElementById("filter-menu") as HTMLDivElement;
-    const filterEffect = document.getElementById("filter-canvas") as HTMLDivElement;
 
+    FILTER_CACHE = filterContainer.innerHTML;
     filterMenu.style.display = "none";
     filterEffect.style.display = "none";
+
+    // Remove the search texts.
+    for (const filter of document.getElementsByClassName("text-filter")) {
+        const f = filter as HTMLInputElement;
+        f.value = "";
+    }
 };
 
 // Update the filter widths.

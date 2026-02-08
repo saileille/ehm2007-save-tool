@@ -41,6 +41,7 @@ Filter menu thingies.
 .filter-category {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(0px, 1fr));
+    align-items: start;
 }
 
 .filter-category > * {

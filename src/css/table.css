@@ -19,3 +19,9 @@ th, td {
 tbody > tr:nth-child(odd) {
     background-color: black;
 }
+
+tbody > tr:hover {
+    outline-width: 1px;
+    outline-color: orange;
+    outline-style: solid;
+}
