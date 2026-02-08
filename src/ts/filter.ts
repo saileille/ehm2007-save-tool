@@ -170,6 +170,7 @@ const addCriterium = async (type: IncludeExclude, menu: HTMLSelectElement, conta
 
     div.append(label, select, filter, delButton);
     container.appendChild(div);
+    filter.select();
 };
 
 // The function for a search filter.

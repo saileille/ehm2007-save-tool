@@ -249,8 +249,8 @@ impl Player {
 
     // Get a 'consistency rating' for the player.
     fn consistency_rating(&self) -> f64 {
-        let score = self.consistency + self.important_matches + self.work_rate - 3;
-        let perfect_score = (20 + 20 + 20 - 3) as f64;
+        let score = (self.consistency * 2) + self.important_matches + self.work_rate - 4;
+        let perfect_score = (40 + 20 + 20 - 4) as f64;
 
         return rating::restrict_minimum(score as f64 / perfect_score, 0.5);
     }

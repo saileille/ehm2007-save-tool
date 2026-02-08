@@ -380,13 +380,14 @@ impl Data {
     }
 
     // Determine what the in-game date could be.
+    // NOTE: Human managers created after the game start have birthday-age ratio as if they were created at game start.
     pub fn calculate_ingame_date(&mut self) {
         self.date_range[0] = SIDate { day: i16::MIN, year: i16::MIN, b_is_leap_year: 0 };
         self.date_range[1] = SIDate { day: i16::MAX, year: i16::MAX, b_is_leap_year: 0 };
 
         for staff in self.staff.values() {
             let (min_date, max_date) = staff.dates_with_this_age();
-            if min_date > self.date_range[0] {
+            if min_date > self.date_range[0] && min_date <= self.date_range[1] {
                 self.date_range[0] = min_date;
 
                 println!(
@@ -398,7 +399,7 @@ impl Data {
                     staff.date_of_birth.to_string(),
                 );
             }
-            if max_date < self.date_range[1] {
+            if max_date < self.date_range[1] && max_date >= self.date_range[0] {
                 self.date_range[1] = max_date;
 
                 println!(
@@ -412,9 +413,9 @@ impl Data {
             }
 
             // The date has been determined when the dates are equal.
-            // if self.date_range[0] == self.date_range[1] {
-            //     break;
-            // }
+            if self.date_range[0] == self.date_range[1] {
+                 break;
+            }
         }
 
         println!("\n");
