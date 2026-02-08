@@ -235,14 +235,16 @@ impl Player {
     }
 
     // Get the rating of a player.
-    pub fn rating(&self, data: &Data, score: usize, low: usize, high: usize) -> f64 {
-        let ca = self.current_ability as usize;
-
+    pub fn rating(&self, _data: &Data, score: usize, low: usize, high: usize) -> f64 {
         let attribute_rating = rating::stretch(score, low, high);
-        let ca_rating = rating::stretch(ca, data.worst_ca as usize, data.best_ca as usize);
 
-        let combined_rating = (attribute_rating + ca_rating) / 2.0;
-        return rating::restrict_minimum(combined_rating * self.consistency_rating(), 0.01);
+        //let ca = self.current_ability as usize;
+        // let ca_rating = rating::stretch(ca, data.worst_ca as usize, data.best_ca as usize);
+
+        // let combined_rating = (attribute_rating + ca_rating) / 2.0;
+        // return rating::restrict_minimum(combined_rating * self.consistency_rating(), 0.01);
+
+        return rating::restrict_minimum(attribute_rating * self.consistency_rating(), 0.01);
     }
 
     // Get a 'consistency rating' for the player.
@@ -263,8 +265,8 @@ impl Player {
             position = 1;
         }
 
-        let score = position + self.versatility - 2;
-        let perfect_score = (20 + 20 - 2) as f64;
+        let score = (position * 2) + self.versatility - 3;
+        let perfect_score = (40 + 20 - 3) as f64;
 
         return rating::restrict_minimum(score as f64 / perfect_score, 0.5);
     }

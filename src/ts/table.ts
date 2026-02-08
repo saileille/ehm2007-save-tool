@@ -1,10 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
-import { daysToDateString } from "./date";
 import { initialisePaging, PAGE, ROWS_PER_PAGE } from "./paging";
 
 type Player = {
     forename: string,
     surname: string,
+    dateOfBirth: [number, number, number],
     positions: number[],
     columns: [string | number],
 };
@@ -15,6 +15,7 @@ export const HEADERS = [
     "Random",
     "Nation",
     "Second Nation",
+    "Age",
     "Birthday",
     "Birth Place",
     "Position",
@@ -179,10 +180,6 @@ export const overwriteTable = () => {
 const getDisplayValue = (index: number, value: string | number): string => {
     const headerName = HEADERS[index];
 
-    if (headerName === "Birthday") {
-        return daysToDateString(value as number);
-    }
-
     if (headerName === "GK Rating"
     || headerName === "LD Rating"
     || headerName === "RD Rating"
@@ -214,6 +211,10 @@ export const sortTable = (n: number) => {
 
         else if (columnName === "Position") {
             sortPosition(sortAscending);
+        }
+
+        else if (columnName === "Birthday" || columnName === "Age") {
+            sortBirthday(sortAscending);
         }
 
         else if (
@@ -291,6 +292,22 @@ const sortPosition = (sortAscending: number) => {
         }
 
         return 0;
+    });
+};
+
+const sortBirthday = (sortAscending: number) => {
+    PLAYERS.sort((a, b) => {
+        let diff = a.dateOfBirth[0] - b.dateOfBirth[0];
+        if (diff !== 0) {
+            return diff * sortAscending;
+        }
+
+        diff = a.dateOfBirth[1] - b.dateOfBirth[1];
+        if (diff !== 0) {
+            return diff * sortAscending;
+        }
+
+        return (a.dateOfBirth[2] - b.dateOfBirth[2]) * sortAscending;
     });
 };
 

@@ -21,7 +21,7 @@ pub mod staff_preferences;
 pub mod stage_name;
 pub mod state_province;
 
-use std::{cmp::Ordering, collections::HashMap, io::Cursor, mem};
+use std::{cmp::Ordering, collections::HashMap, i16, io::Cursor, mem};
 
 use binread::BinRead;
 use tauri::webview::cookie::time::util::is_leap_year;
@@ -106,10 +106,6 @@ pub struct Data {
     order_currencies: Vec<i32>,
     order_drafts: Vec<i32>,
     order_stage_names: Vec<i32>,
-
-    // Helper stuff.
-    nhl_ids: Vec<i32>,
-    na_ids: Vec<i32>,
 
     // The best attribute scores in the database.
     pub best_gk: usize,
@@ -385,8 +381,8 @@ impl Data {
 
     // Determine what the in-game date could be.
     pub fn calculate_ingame_date(&mut self) {
-        self.date_range[0] = SIDate { day: 0, year: i16::MIN, b_is_leap_year: 0 };
-        self.date_range[1] = SIDate { day: 366, year: i16::MAX, b_is_leap_year: 0 };
+        self.date_range[0] = SIDate { day: i16::MIN, year: i16::MIN, b_is_leap_year: 0 };
+        self.date_range[1] = SIDate { day: i16::MAX, year: i16::MAX, b_is_leap_year: 0 };
 
         for staff in self.staff.values() {
             let (min_date, max_date) = staff.dates_with_this_age();
@@ -394,7 +390,7 @@ impl Data {
                 self.date_range[0] = min_date;
 
                 println!(
-                    "{} - {}\n{}, {}, {}",
+                    "{} - {}\n{}, {}, {}\n",
                     self.date_range[0].to_string(),
                     self.date_range[1].to_string(),
                     staff.full_name(self),
@@ -406,7 +402,7 @@ impl Data {
                 self.date_range[1] = max_date;
 
                 println!(
-                    "{} - {}\n{}, {}, {}",
+                    "{} - {}\n{}, {}, {}\n",
                     self.date_range[0].to_string(),
                     self.date_range[1].to_string(),
                     staff.full_name(self),
@@ -420,26 +416,8 @@ impl Data {
             //     break;
             // }
         }
-    }
 
-    // Find the IDs of NHL and related competitions.
-    pub fn find_nhl_ids(&mut self) {
-        for comp in self.competitions.values() {
-            let name = comp.name();
-            if name.contains("National Hockey League") {
-                self.nhl_ids.push(comp.id);
-            }
-        }
-    }
-
-    // Find the IDs of North American countries.
-    pub fn find_na_ids(&mut self) {
-        for nation in self.nations.values() {
-            let name = nation.name();
-            if name == "United States" || name == "Canada" {
-                self.na_ids.push(nation.id);
-            }
-        }
+        println!("\n");
     }
 
     // Calculate the best and the worst player ratings the save file has.
@@ -533,8 +511,33 @@ impl PartialOrd for SIDate {
 }
 
 impl SIDate {
+    const MONTH_DAYS: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+    fn new(year: i16, day: i16) -> Self {
+        let mut date = SIDate { day: 0, year, b_is_leap_year: 0 };
+        date.add_days(day as isize);
+        return date;
+    }
+
+    // Get an instance from year, month and day.
+    fn _new_from_date(year: i16, month: u8, month_day: u8) -> Self {
+        let days_in_february = if is_leap_year(year as i32) { 29 } else { 28 };
+        let mut day = 0;
+        for i in 0..month as usize - 1 {
+            let month_days = match i == 1 {
+                true => days_in_february,
+                false => Self::MONTH_DAYS[i]
+            };
+
+            day += month_days as i16;
+        }
+
+        day += month_day as i16 - 1;
+        return Self { year, day, b_is_leap_year: 0 };
+    }
+
     // SI bullshit.
-    fn is_leap_year_si(&self) -> bool {
+    fn _is_leap_year_si(&self) -> bool {
         return self.b_is_leap_year != 0;
     }
 
@@ -563,17 +566,41 @@ impl SIDate {
             self.year,
             self.day,
             is_leap_year(self.year as i32),
-            self.is_leap_year_si(),
+            self.b_is_leap_year,
         );
     }
 
-    // Get days from the default.
-    pub fn to_days(&self) -> usize {
-        return self.days_between(Self::default());
+    // Get days since the default (1.2.1900).
+    fn _to_days(&self) -> usize {
+        return self._days_between(Self::default());
+    }
+
+    // Get the year, month and day of the date.
+    pub fn to_year_month_day(&self) -> (i16, u8, u8) {
+        let february_days = if self.is_leap_year() { 29 } else { 28 };
+        let mut days = self.day;
+        let mut month = 13;
+
+        for (i, d) in Self::MONTH_DAYS.iter().enumerate() {
+            let month_days = match i == 1 {
+                true => february_days,
+                false => *d as i16
+            };
+
+            if days >= month_days {
+                days -= month_days;
+            }
+            else {
+                month = i as u8 + 1;
+                break;
+            }
+        }
+
+        return (self.year, month, days as u8 + 1);
     }
 
     // Get days between this date and another. This date must be more recent.
-    fn days_between(&self, other: Self) -> usize {
+    fn _days_between(&self, other: Self) -> usize {
         // Add days from the earlier date's year.
         let mut days = match is_leap_year(other.year as i32) {
             true => 366 - other.day,
@@ -594,7 +621,7 @@ impl SIDate {
     }
 
     // Add this many years to the date. Negative years subtract.
-    fn add_years(&mut self, years: i16) {
+    fn _add_years(&mut self, years: i16) {
         self.year += years as i16;
 
         if self.day == 365 && !self.is_leap_year() {

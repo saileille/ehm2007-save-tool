@@ -25,8 +25,7 @@ pub fn run() {
             // let data = load_bin(Path::new("C:/Users/Aleksi/Documents/Sports Interactive/EHM 2007/games/test.sav"));
             // handle.manage(data);
 
-            #[cfg(debug_assertions)]
-            {
+            #[cfg(debug_assertions)] {
                 let window = app.get_webview_window("main").unwrap();
                 window.open_devtools();
             }
@@ -39,6 +38,7 @@ pub fn run() {
             commands::get_nations,
             commands::get_clubs,
             commands::get_comps,
+            commands::export_to_csv,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

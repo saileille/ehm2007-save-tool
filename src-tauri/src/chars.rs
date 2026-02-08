@@ -28,6 +28,7 @@ lazy_static! {
         (201, Vec::from([195, 137])),  // É
         (205, Vec::from([195, 141])),  // Í
         (206, Vec::from([195, 142])),  // Î
+        (208, Vec::from([195, 144])),  // Ð
         (211, Vec::from([195, 147])),  // Ó
         (214, Vec::from([195, 150])),  // Ö
         (216, Vec::from([195, 152])),  // Ø
@@ -82,9 +83,16 @@ pub fn bytes_to_string(bytes: &[u8]) -> Result<String, Utf8Error> {
         }
     }
 
-    // return chars.into_iter().map(|c| c).collect();
-    let string = from_utf8(&converted_bytes)?;
-    return Ok(string.to_string());
+    let string = from_utf8(&converted_bytes);
+    if cfg!(debug_assertions) {
+        let string = string?;
+        return Ok(string.to_string());
+    }
+
+    match string.is_ok() {
+        true => return Ok(string.unwrap().to_string()),
+        false => return Ok(bytes_to_string_debug(bytes))
+    }
 }
 
 // Get a simple string for debugging purposes.

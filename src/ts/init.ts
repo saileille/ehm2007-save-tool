@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getInGameDateText } from "./date";
 import { applyFilters, createFilterLayer } from "./filter";
-import { HEADERS, sortTable } from "./table";
+import { HEADERS, PLAYERS, sortTable } from "./table";
 
 // Replace the save-loading start page with the player table.
 const createPlayerView = async () => {
@@ -10,6 +10,24 @@ const createPlayerView = async () => {
 
     const main = document.getElementsByTagName("main")[0];
     main.innerHTML = "";
+
+    const exportToCsvButton = document.createElement("button");
+    exportToCsvButton.textContent = "Export to CSV";
+    exportToCsvButton.onclick = async () => {
+        const csv: string[][] = [];
+        for (const player of PLAYERS) {
+            const row: string[] = [];
+            for (const cell of player.columns) {
+                row.push(cell.toString());
+            }
+            csv.push(row);
+        }
+
+        await invoke("export_to_csv", {
+            "headers": HEADERS,
+            "players": csv,
+        });
+    };
 
     const loadSaveButton = document.createElement("button");
     loadSaveButton.textContent = "Load Save";
@@ -50,7 +68,7 @@ const createPlayerView = async () => {
     thead.appendChild(tr);
     table.append(thead, tbody);
 
-    main.append(loadSaveButton, inGameDate, filtersButton, prevButton, pageNumbers, nextButton, table);
+    main.append(loadSaveButton, exportToCsvButton, inGameDate, filtersButton, prevButton, pageNumbers, nextButton, table);
     await createFilterLayer(main, filtersButton);
 
     createSortingScripts();
@@ -71,6 +89,7 @@ const createSortingScripts = () => {
 const loadSave = async () => {
     let success = await invoke("load_save");
     if (!success) { return; }
+
     await createPlayerView();
 
     // Get the players according to the filters set.

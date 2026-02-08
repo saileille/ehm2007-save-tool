@@ -14,7 +14,8 @@
     "windows": [
       {
         "title": "EHM 2007 Save Viewer",
-        "maximized": true
+        "maximized": true,
+        "minWidth": 950
       }
     ],
     "security": {

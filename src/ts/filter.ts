@@ -17,21 +17,33 @@ export const createFilterLayer = async (main: HTMLElement, filtersButton: HTMLBu
 
     const filterContainer = document.createElement("div");
     filterContainer.id = "filter-container";
+    filterContainer.className = "filter-category";
 
     filtersButton.onclick = () => {
         filterEffect.style.display = "";
         filterMenu.style.display = "";
+
+        // Remove the main scrollbar.
+        document.body.style.overflow = "hidden";
+
+        updateFilterColumns();
     };
 
-    createBirthYearFilter(filterContainer);
-    createEitherYesNo(filterContainer, "Can Play For Country", "can-play-for-country");
-    createEitherYesNo(filterContainer, "Has Second Nationality", "second-nationality");
-    createEitherYesNo(filterContainer, "Has Declared for Nation", "has-declared");
+    const filters = document.createElement("fieldset");
+    filters.className = "filter-category";
+
+    const legend = document.createElement("legend");
+    legend.textContent = "Filters";
+    filters.appendChild(legend);
+    filterContainer.appendChild(filters);
+
+    createBirthYearFilter(filters);
+    createEitherYesNo(filters, "Can Play for Country", "can-play-for-country");
+    createEitherYesNo(filters, "Has Second Nationality", "second-nationality");
+    createEitherYesNo(filters, "Has Declared for Nation", "has-declared");
+
     createIncludeExcludeFieldset("Include", filterContainer);
     createIncludeExcludeFieldset("Exclude", filterContainer);
-
-    // createNHLExclusion(filterContainer);
-    // createNorthAmericaExclusion(filterContainer);
 
     const applyFiltersButton = document.createElement("button");
     applyFiltersButton.textContent = "Apply";
@@ -50,7 +62,10 @@ export const createFilterLayer = async (main: HTMLElement, filtersButton: HTMLBu
 
 // Create a section for search terms to be included.
 const createIncludeExcludeFieldset = (type: IncludeExclude, filterContainer: HTMLDivElement) => {
+    const div = document.createElement("div");
+
     const fieldset = document.createElement("fieldset");
+    fieldset.className = "filter-category";
     const legend = document.createElement("legend");
     legend.textContent = type;
 
@@ -77,20 +92,27 @@ const createIncludeExcludeFieldset = (type: IncludeExclude, filterContainer: HTM
     menu.onchange = () => {
         addCriterium(type, menu, fieldset);
         menu.value = "default";
+
+        // Give the backend time before recalculating columns.
+        setTimeout(updateFilterColumns, 50);
     };
 
-    fieldset.append(legend, menu);
-    filterContainer.appendChild(fieldset);
+    fieldset.appendChild(legend);
+    div.append(menu, fieldset);
+
+    filterContainer.appendChild(div);
 };
 
 // Add either include or exclude element.
 const addCriterium = async (type: IncludeExclude, menu: HTMLSelectElement, container: HTMLFieldSetElement) => {
+    const div = document.createElement("div");
+    div.className = "criterium-container";
+
     const criterium = menu.value;
     const name = menu.selectedOptions[0].textContent;
 
     const typeLowerCase = type.toLowerCase();
 
-    const div = document.createElement("div");
     const label = document.createElement("label");
     label.textContent = name;
 
@@ -143,6 +165,7 @@ const addCriterium = async (type: IncludeExclude, menu: HTMLSelectElement, conta
 
     delButton.onclick = () => {
         div.remove();
+        updateFilterColumns();
     };
 
     div.append(label, select, filter, delButton);
@@ -184,10 +207,9 @@ const createSelect = async (fn: string): Promise<HTMLSelectElement> => {
 };
 
 // Create a radio group with three options.
-const createEitherYesNo = (filterMenu: HTMLDivElement, title: string, name: string) => {
+const createEitherYesNo = (filterMenu: HTMLFieldSetElement, title: string, name: string) => {
     const div = document.createElement("div");
-    const p = document.createElement("p");
-    p.textContent = title;
+    const text = document.createTextNode(title);
 
     const labelEither = document.createElement("label");
     labelEither.htmlFor = `${name}-either`;
@@ -217,13 +239,14 @@ const createEitherYesNo = (filterMenu: HTMLDivElement, title: string, name: stri
     no.value = `${name}-no`;
     no.name = name;
 
-    div.append(p, either, labelEither, yes, labelYes, no, labelNo);
+    div.append(text, document.createElement("br"), either, labelEither, yes, labelYes, no, labelNo);
     filterMenu.appendChild(div);
 };
 
 // Create a filter for birth year.
-const createBirthYearFilter = (filterMenu: HTMLDivElement) => {
+const createBirthYearFilter = (filterMenu: HTMLFieldSetElement) => {
     const div = document.createElement("div");
+
     const label = document.createElement("label");
     label.textContent = "Birth Year";
 
@@ -357,6 +380,9 @@ export const applyFilters = async () => {
         includeNationsPlaying,
         excludeNationsPlaying,
     );
+
+    // Re-enable the scrollbar.
+    document.body.style.overflow = "";
 }
 
 const onApplyFiltersButtonClick = () => {
@@ -366,4 +392,44 @@ const onApplyFiltersButtonClick = () => {
 
     filterMenu.style.display = "none";
     filterEffect.style.display = "none";
+};
+
+// Update the filter widths.
+const updateFilterColumns = () => {
+    const filterContainer = document.getElementById("filter-container") as HTMLDivElement;
+    filterContainer.style.gridTemplateColumns = "";
+
+    let largestColumn = 0.0;
+    for (const category of document.getElementsByClassName("filter-category")) {
+        if (category.tagName === "DIV") {
+            continue;
+        }
+
+        const cat = category as HTMLFieldSetElement;
+        cat.style.gridTemplateColumns = "";
+        const columnWidth = calculateColumnWidth(cat);
+        if (columnWidth > largestColumn) {
+            largestColumn = columnWidth;
+        }
+    }
+
+    filterContainer.style.gridTemplateColumns = `repeat(auto-fit, minmax(${largestColumn + 30}px, 1fr))`;
+};
+
+// Calculate the minimum column width for a given grid.
+const calculateColumnWidth = (grid: HTMLFieldSetElement): number => {
+    let largestColumn = 0.0;
+    for (const child of grid.children) {
+        if (child.tagName === "LEGEND") {
+            continue;
+        }
+
+        const width = child.getBoundingClientRect().width;
+        if (width > largestColumn) {
+            largestColumn = width;
+        }
+    }
+
+    grid.style.gridTemplateColumns = `repeat(auto-fit, minmax(${largestColumn}px, 1fr))`;
+    return largestColumn;
 };

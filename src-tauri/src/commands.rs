@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::{fs::File, io::Write, sync::Mutex};
 
 use tauri::{AppHandle, Manager as _};
 use tauri_plugin_dialog::DialogExt as _;
@@ -76,12 +76,18 @@ pub fn fetch_players(
 
 #[tauri::command]
 // Get the possible ingame dates.
-pub fn get_ingame_date(handle: AppHandle) -> [usize; 2] {
+pub fn get_ingame_date(handle: AppHandle) -> [String; 2] {
     let data = handle.state::<Mutex<Data>>();
+
     let date_range = &data.lock().unwrap().date_range;
+    let dates = [
+        date_range[0].to_year_month_day(),
+        date_range[1].to_year_month_day(),
+    ];
+
     return [
-        date_range[0].to_days(),
-        date_range[1].to_days(),
+        format!("{}.{}.{}", dates[0].2, dates[0].1, dates[0].0),
+        format!("{}.{}.{}", dates[1].2, dates[1].1, dates[1].0),
     ];
 }
 
@@ -146,4 +152,29 @@ pub fn get_comps(handle: AppHandle) -> Vec<(i32, String)> {
 
     comps.push((-1, "No Competition".to_string()));
     return comps;
+}
+
+#[tauri::command]
+// Export the players to a CSV file.
+pub fn export_to_csv(handle: AppHandle, headers: Vec<String>, players: Vec<Vec<String>>) {
+    let filepath = match handle
+        .dialog()
+        .file()
+        // .set_directory()
+        .add_filter("csv", &["csv"])
+        .blocking_save_file()
+    {
+        Some(p) => p,
+        None => return,
+    };
+
+    let mut string = Vec::new();
+    string.push(headers.join("\t"));
+
+    for player in players {
+        string.push(player.join("\t"));
+    }
+
+    let mut file = File::create(filepath.as_path().unwrap()).unwrap();
+    file.write_all(string.join("\n").as_bytes()).unwrap();
 }

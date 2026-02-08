@@ -10,6 +10,7 @@ pub struct Player {
     pub columns: Vec<serde_json::Value>,
     pub forename: String,
     pub surname: String,
+    pub date_of_birth: (i16, u8, u8),
     pub positions: Vec<u8>,
 }
 
@@ -22,7 +23,8 @@ impl Player {
             "Second Nation" => json!(s.second_nation_name(data)),
             "Club Contracted" => json!(s.club_contracted_name(data).unwrap()),
             "Club Playing" => json!(s.club_playing_name(data).unwrap()),
-            "Birthday" => json!(s.date_of_birth.to_days()),
+            "Age" => json!(s.age),
+            "Birthday" => json!(format!("{}.{}.{}", self.date_of_birth.2, self.date_of_birth.1, self.date_of_birth.0)),
             "Birth Place" => json!(s.birthplace(data)),
             "Position" => json!(p.position_string()),
             "GK Rating" => json!(s.gk_rating(data)),

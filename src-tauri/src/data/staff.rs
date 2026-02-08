@@ -495,6 +495,7 @@ impl Staff {
         let mut player = views::player::Player {
             forename: self.forename(data),
             surname: self.surname(data),
+            date_of_birth: self.date_of_birth.to_year_month_day(),
             positions: p.position_vec(),
 
             ..Default::default()
@@ -510,19 +511,8 @@ impl Staff {
 
     // Get the dates when the person has the current age.
     pub fn dates_with_this_age(&self) -> (SIDate, SIDate) {
-        let mut min = SIDate {
-            day: self.date_of_birth.day,
-            year: self.date_of_birth.year,
-            b_is_leap_year: 0,
-        };
-
-        min.add_years(self.age);
-        let mut max = min.clone();
-        max.add_years(1);
-
-        if !max.is_leap_year() || self.date_of_birth.day < 365 {
-            max.add_days(-1);
-        }
+        let min = SIDate::new(self.date_of_birth.year + self.age, self.date_of_birth.day);
+        let max = SIDate::new(min.year + 1, min.day - 1);
 
         return (min, max);
     }
@@ -555,35 +545,15 @@ impl Staff {
         + p.convert_attribute("Positioning") as usize + self.pressure as usize + p.convert_attribute("Slapshot") as usize
         + p.pace as usize + p.teamwork as usize;
 
-        let x20 = p.convert_attribute("Balance") as usize + p.convert_attribute("Decisions") as usize + p.stamina as usize
-        + p.strength as usize;
+        let x20 = p.convert_attribute("Balance") as usize + p.convert_attribute("Creativity") as usize
+        + p.convert_attribute("Decisions") as usize + p.flair as usize + p.convert_attribute("Off The Puck") as usize
+        + p.stamina as usize + p.convert_attribute("Stickhandling") as usize + p.strength as usize;
 
-        let x10 = p.agility as usize + p.agitation as usize + p.convert_attribute("Creativity") as usize + p.flair as usize
-        + p.convert_attribute("Off The Puck") as usize + self.professionalism as usize + self.sportsmanship as usize
-        + p.convert_attribute("Stickhandling") as usize + self.temperament as usize + p.convert_attribute("Wristshot") as usize;
+        let x10 = p.agility as usize + p.agitation as usize + self.professionalism as usize + self.sportsmanship as usize
+        + self.temperament as usize + p.convert_attribute("Wristshot") as usize;
 
         let x1 = p.convert_attribute("Deflections") as usize + p.convert_attribute("Deking") as usize
         + p.leadership as usize + p.natural_fitness as usize;
-
-        return x30 * 30 + x20 * 20 + x10 * 10 + x1;
-    }
-
-    // Get the person's 'score' as a winger.
-    pub fn w_attribute_score(&self, p: &Player) -> usize {
-        let x30 = p.acceleration as usize + p.agility as usize + p.convert_attribute("Anticipation") as usize
-        + self.determination as usize + p.convert_attribute("Passing") as usize + self.pressure as usize + p.pace as usize
-        + p.convert_attribute("Stickhandling") as usize + p.convert_attribute("Wristshot") as usize;
-
-        let x20 = p.convert_attribute("Balance") as usize + p.bravery as usize + p.convert_attribute("Creativity") as usize
-        + p.convert_attribute("Decisions") as usize + p.convert_attribute("Deking") as usize + p.flair as usize
-        + p.convert_attribute("Off The Puck") as usize + p.convert_attribute("Positioning") as usize + p.stamina as usize
-        + p.strength as usize + p.teamwork as usize;
-
-        let x10 = p.agitation as usize + p.convert_attribute("Checking") as usize + p.convert_attribute("Deflections") as usize
-        + p.convert_attribute("Hitting") as usize + p.convert_attribute("Pokecheck") as usize + self.professionalism as usize
-        + p.convert_attribute("Slapshot") as usize + self.sportsmanship as usize + self.temperament as usize;
-
-        let x1 = p.leadership as usize + p.natural_fitness as usize;
 
         return x30 * 30 + x20 * 20 + x10 * 10 + x1;
     }
@@ -604,6 +574,26 @@ impl Staff {
 
         let x10 = p.agitation as usize + self.professionalism as usize + p.convert_attribute("Slapshot") as usize
         + self.sportsmanship as usize + self.temperament as usize;
+
+        let x1 = p.leadership as usize + p.natural_fitness as usize;
+
+        return x30 * 30 + x20 * 20 + x10 * 10 + x1;
+    }
+
+    // Get the person's 'score' as a winger.
+    pub fn w_attribute_score(&self, p: &Player) -> usize {
+        let x30 = p.acceleration as usize + p.agility as usize + p.convert_attribute("Anticipation") as usize
+        + self.determination as usize + p.convert_attribute("Passing") as usize + self.pressure as usize + p.pace as usize
+        + p.convert_attribute("Stickhandling") as usize + p.convert_attribute("Wristshot") as usize;
+
+        let x20 = p.convert_attribute("Balance") as usize + p.bravery as usize + p.convert_attribute("Creativity") as usize
+        + p.convert_attribute("Decisions") as usize + p.convert_attribute("Deking") as usize + p.flair as usize
+        + p.convert_attribute("Off The Puck") as usize + p.convert_attribute("Positioning") as usize + p.stamina as usize
+        + p.strength as usize + p.teamwork as usize;
+
+        let x10 = p.agitation as usize + p.convert_attribute("Checking") as usize + p.convert_attribute("Deflections") as usize
+        + p.convert_attribute("Hitting") as usize + p.convert_attribute("Pokecheck") as usize + self.professionalism as usize
+        + p.convert_attribute("Slapshot") as usize + self.sportsmanship as usize + self.temperament as usize;
 
         let x1 = p.leadership as usize + p.natural_fitness as usize;
 

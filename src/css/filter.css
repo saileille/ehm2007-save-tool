@@ -34,13 +34,55 @@ Filter menu thingies.
     -ms-transform: translate(-50%, -50%);
     -o-transform: translate(-50%, -50%);
 
+    overflow-x: hidden;
+    overflow-y: auto; /* Adds scrollbar if necessary. */
 }
 
-#filter-container {
+.filter-category {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(0px, 1fr));
+}
+
+.filter-category > * {
+    min-width: max-content;
 }
 
 .year {
     width: 4em;
+    text-align: center;
+}
+
+.criterium-container {
+    display: grid;
+    grid-template-columns: repeat(3, min-content);
+    grid-template-rows: repeat(2, min-content);
+    align-items: center;
+}
+
+.criterium-container > label {
+    grid-column-start: 1;
+    grid-column-end: 2;
+    grid-row-start: 1;
+    grid-row-end: 3;
+}
+
+.criterium-container > input[text] {
+    grid-column-start: 2;
+    grid-column-end: 3;
+    grid-row-start: 1;
+    grid-row-end: 2;
+}
+
+.criterium-container > select {
+    grid-column-start: 2;
+    grid-column-end: 3;
+    grid-row-start: 2;
+    grid-row-end: 3;
+}
+
+.criterium-container > button {
+    grid-column-start: 3;
+    grid-column-end: 4;
+    grid-row-start: 1;
+    grid-row-end: 3;
 }
